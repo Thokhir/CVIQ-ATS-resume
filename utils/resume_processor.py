@@ -622,29 +622,93 @@ def _ensure_bullet(line: str) -> str:
     return "• " + s
 
 
+# ── Offline ATS elaboration vocabulary ───────────────────────────────────────
+_ACTION_VERBS = [
+    "Performed", "Executed", "Managed", "Developed", "Implemented", "Coordinated",
+    "Conducted", "Analyzed", "Maintained", "Operated", "Supported", "Streamlined",
+    "Documented", "Optimized", "Delivered", "Administered", "Facilitated", "Handled",
+]
+_IMPACT_TAILS = [
+    "ensuring accuracy, quality and compliance",
+    "to support efficient and reliable operations",
+    "improving consistency and turnaround time",
+    "in line with established standards and best practices",
+    "while maintaining attention to detail and data integrity",
+    "to meet quality, safety and timeline requirements",
+]
+# Words that already signal a verb-led / complete sentence (skip prepending).
+_VERB_HINTS = {v.lower() for v in _ACTION_VERBS} | {
+    "built", "led", "created", "designed", "improved", "reduced", "increased",
+    "achieved", "automated", "tested", "trained", "researched", "collected",
+    "prepared", "processed", "monitored", "ensured", "collaborated", "assisted",
+}
+
+
+def _verb_led(s: str) -> bool:
+    words = s.split()
+    if not words:
+        return False
+    first = words[0].lower().strip(",")
+    return first in _VERB_HINTS or first.endswith("ed") or first.endswith("ing")
+
+
+def _elaborate_point(point: str, idx: int) -> str:
+    """Expand a single keyword/point into a full, ATS-friendly bullet."""
+    s = point.strip().lstrip("•-*–◦·").strip().rstrip(".").strip()
+    if not s:
+        return ""
+    # Normalise common "Responsible for ..." phrasing into an action.
+    m = re.match(r'(?i)^responsib\w*\s+(?:for|to)\s+(.+)', s)
+    if m:
+        s = m.group(1).strip()
+    if _verb_led(s):
+        bullet = s[0].upper() + s[1:]
+    else:
+        verb = _ACTION_VERBS[idx % len(_ACTION_VERBS)]
+        first_word = s.split()[0]
+        # Keep acronyms (NABL, PCR, QC) and CamelCase as-is; lowercase normal words.
+        body = s if (first_word.isupper() or not first_word[:1].isalpha()) else s[0].lower() + s[1:]
+        bullet = f"{verb} {body}"
+    # Add a qualitative impact tail to short bullets (no fabricated numbers).
+    low = bullet.lower()
+    if len(bullet.split()) < 10 and not any(t in low for t in
+            ("ensuring", "improving", "to support", "in line with", "while maintaining", "to meet")):
+        bullet += f", {_IMPACT_TAILS[idx % len(_IMPACT_TAILS)]}"
+    return "• " + bullet[0].upper() + bullet[1:]
+
+
+def _split_points(raw: str) -> list:
+    parts = re.split(r'[\n;]+', raw)
+    if len(parts) == 1:
+        parts = re.split(r',\s+(?=[A-Za-z])', raw)   # comma-separated keywords
+    return [p.strip() for p in parts if p.strip()]
+
+
 def ai_write_bullets(raw: str, role: str = "", org: str = "", industry: str = "") -> str:
     """
-    Turn a user's plain description/prompt into polished, ATS-friendly resume
-    bullets (one per line, each starting with '• '). Uses the local LLM when
-    available; otherwise cleanly formats the input into bullets. Never fabricates.
+    Turn a user's plain keywords/points into polished, ATS-friendly resume bullets
+    (one per line, each starting with '• '). Uses the local LLM when available;
+    otherwise an offline ATS-elaboration engine expands the points into full
+    action-verb bullets. Never fabricates employers, tools or numeric metrics.
     """
     raw = (raw or "").strip()
     if not raw:
         return ""
-    # ── LLM path ──────────────────────────────────────────────
+    # ── LLM path (when a local model is running) ──────────────
     try:
         from utils import llm
         if llm.ollama_available():
-            system = ("You rewrite rough notes into professional, ATS-friendly resume bullet points. "
-                      "Use strong action verbs and keep each bullet to one line. Be truthful to the input — "
-                      "do NOT invent employers, tools, metrics or achievements that are not implied. "
+            system = ("You rewrite rough notes/keywords into professional, ATS-friendly resume bullet "
+                      "points. Use strong action verbs, keep each bullet to one line, and expand terse "
+                      "keywords into full, meaningful achievements. Be truthful to the input — do NOT "
+                      "invent employers, tools, or numeric metrics that are not implied. "
                       "Return ONLY the bullets, each on its own line starting with '• '.")
             ctx = []
             if role: ctx.append(f"role: {role}")
             if org: ctx.append(f"organisation: {org}")
             if industry: ctx.append(f"industry: {industry}")
             ctxs = (" (" + "; ".join(ctx) + ")") if ctx else ""
-            prompt = (f"Rewrite the following into 3-5 concise resume bullet points{ctxs}. "
+            prompt = (f"Expand the following keywords/notes into 3-5 strong resume bullet points{ctxs}. "
                       f"Each bullet on its own line starting with '• '.\n\nNOTES:\n{raw}")
             out = llm.generate(prompt, system=system, temperature=0.3, timeout=90)
             if out:
@@ -654,37 +718,66 @@ def ai_write_bullets(raw: str, role: str = "", org: str = "", industry: str = ""
                     return "\n".join(lines[:6])
     except Exception:
         pass
-    # ── Rule-based fallback: split into clean bullets ─────────
-    parts = re.split(r'[\n;]+', raw)
-    if len(parts) == 1:
-        parts = re.split(r',\s+(?=[A-Za-z])', raw)   # fall back to comma-separated
-    bullets = [_ensure_bullet(p) for p in parts]
+    # ── Offline ATS elaboration engine (works without any LLM) ─
+    points = _split_points(raw)
+    bullets = [_elaborate_point(p, i) for i, p in enumerate(points)]
     bullets = [b for b in bullets if b]
-    return "\n".join(bullets) if bullets else _ensure_bullet(raw)
+    return "\n".join(bullets) if bullets else _elaborate_point(raw, 0)
 
 
 def ai_write_summary(raw: str, name: str = "", industry: str = "") -> str:
-    """Rewrite a rough objective/summary prompt into a polished 3-4 sentence
-    professional summary. LLM when available; otherwise returns tidied input."""
+    """Turn rough keywords/points into a polished 3-4 sentence professional
+    summary. LLM when available; otherwise an offline ATS summary builder."""
     raw = (raw or "").strip()
     if not raw:
         return ""
+    # ── LLM path ──────────────────────────────────────────────
     try:
         from utils import llm
         if llm.ollama_available():
             system = ("You write concise, professional resume summaries. Keep it to 3-4 sentences, "
-                      "no headings, first-person implied. Be truthful to the input — never invent "
-                      "experience, degrees, employers or numbers.")
-            prompt = (f"Rewrite this into a polished professional summary for a "
-                      f"{industry or 'professional'} resume:\n\n{raw}")
-            out = llm.generate(prompt, system=system, temperature=0.3, timeout=90)
+                      "no headings, first-person implied. Expand the given keywords into a compelling "
+                      "summary, but never invent experience, degrees, employers or numbers.")
+            prompt = (f"Write a polished professional summary for a {industry or 'professional'} resume "
+                      f"based on these keywords/notes:\n\n{raw}")
+            out = llm.generate(prompt, system=system, temperature=0.35, timeout=90)
             if out and len(out.strip()) > 25:
                 return out.strip().strip('"')
     except Exception:
         pass
-    # Fallback: tidy capitalisation / whitespace
-    s = re.sub(r'\s+', ' ', raw).strip()
-    return s[0].upper() + s[1:] if s else s
+    # ── Offline ATS summary builder ───────────────────────────
+    field = (industry or "").strip() or "Professional"
+    field_l = field.lower()
+    kws = _split_points(raw)
+    # If the user already wrote prose (not keywords), just tidy it.
+    if len(kws) <= 1 and len(raw.split()) > 14:
+        s = re.sub(r'\s+', ' ', raw).strip()
+        return s[0].upper() + s[1:]
+    kws = [k.rstrip(".").strip() for k in kws if k.strip()]
+    if not kws:
+        s = re.sub(r'\s+', ' ', raw).strip()
+        return s[0].upper() + s[1:] if s else s
+
+    def _join(items):
+        items = [i for i in items if i]
+        if len(items) == 1:
+            return items[0]
+        if len(items) == 2:
+            return f"{items[0]} and {items[1]}"
+        return ", ".join(items[:-1]) + f", and {items[-1]}"
+
+    top = kws[:3]
+    rest = kws[3:6]
+    s1 = f"Detail-oriented {field} professional with hands-on experience in {_join(top)}."
+    if rest:
+        s2 = (f"Skilled in {_join(rest)}, with a strong focus on accuracy, quality and "
+              f"continuous improvement.")
+    else:
+        s2 = ("Known for attention to detail, reliability and a results-driven approach to "
+              "delivering high-quality work.")
+    s3 = (f"Seeking to apply these strengths in a {field_l} role to add measurable, "
+          f"ATS-aligned value to the team.")
+    return " ".join([s1, s2, s3])
 
 
 def _cover_letter_facts(resume_text: str, jd: str):

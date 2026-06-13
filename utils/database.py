@@ -238,6 +238,7 @@ def init_db():
     for sql in [
         "ALTER TABLE users ADD COLUMN profession TEXT DEFAULT ''",
         "ALTER TABLE users ADD COLUMN credits INTEGER DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN temp_access_until TEXT",
         "ALTER TABLE subscriptions ADD COLUMN resumes_used INTEGER DEFAULT 0",
     ]:
         try: c.execute(sql); conn.commit()
@@ -389,6 +390,54 @@ def add_credit_pack(uid, pack_id, granted_by="system") -> int:
     return add_credits(uid, pack["credits"], reason=f"pack:{pack_id}", granted_by=granted_by)
 
 
+# ── Temporary full access (owner-granted, time-boxed) ─────────────
+def get_temp_access_until(uid):
+    conn = get_conn()
+    row = conn.execute("SELECT temp_access_until FROM users WHERE id=?", (uid,)).fetchone()
+    conn.close()
+    return row["temp_access_until"] if row else None
+
+def has_temp_access(uid) -> bool:
+    """True if the user currently has an active owner-granted full-access window."""
+    until = get_temp_access_until(uid)
+    if not until:
+        return False
+    try:
+        return datetime.strptime(until, "%Y-%m-%d %H:%M:%S") > datetime.now()
+    except Exception:
+        return False
+
+def grant_temporary_full_access(email, hours=24, granted_by="owner"):
+    """Give the account with this email FULL access for `hours` hours.
+    Does NOT touch their subscription/credits — it's an independent window."""
+    user = get_user_by_email((email or "").strip())
+    if not user:
+        return {"ok": False, "message": "No account found with that email. Ask them to sign up first."}
+    until = (datetime.now() + timedelta(hours=int(hours))).strftime("%Y-%m-%d %H:%M:%S")
+    conn = get_conn()
+    conn.execute("UPDATE users SET temp_access_until=? WHERE id=?", (until, user["id"]))
+    conn.commit(); conn.close()
+    return {"ok": True, "until": until, "username": user["username"],
+            "message": f"✅ Granted {hours}h full access to {user['username']} ({email}) until {until}."}
+
+def revoke_temp_access(uid):
+    conn = get_conn()
+    conn.execute("UPDATE users SET temp_access_until=NULL WHERE id=?", (uid,))
+    conn.commit(); conn.close()
+
+def get_active_temp_grants():
+    """List users whose temp full-access window is still active."""
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT id, username, email, temp_access_until FROM users "
+        "WHERE temp_access_until IS NOT NULL AND temp_access_until > ? ORDER BY temp_access_until DESC",
+        (now,)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
 # ── Subscriptions & Usage ─────────────────────────────────────────
 
 def has_subscription_ai(uid, username="", email="") -> bool:
@@ -416,6 +465,7 @@ def get_user_plan(uid, username="", email=""):
     role_row = conn.execute("SELECT role FROM users WHERE id=?", (uid,)).fetchone()
     conn.close()
     if role_row and role_row["role"] in ("owner","admin"): return "agency"
+    if has_temp_access(uid): return "agency"   # owner-granted 24h full access
     sub = get_active_subscription(uid)
     if not sub: return "none"
     # Check expiry for time-based plans
@@ -433,6 +483,10 @@ def can_use_optimizer(uid, username="", email=""):
     Returns (allowed: bool, reason: str, remaining: int)
     Checks plan, expiry, period quota, and daily quota.
     """
+    # Owner-granted temporary full access = unlimited while the window is open.
+    if has_temp_access(uid):
+        return True, "ok", 999
+
     credits  = get_credits(uid)
     plan_key = get_user_plan(uid, username, email)
     sub      = get_active_subscription(uid)
@@ -482,6 +536,10 @@ def record_optimizer_use(uid, username="", email=""):
     no active subscription quota, one credit is deducted instead.
     Returns the charge method: 'subscription' | 'credit' | 'free'.
     """
+    # Owner-granted temporary full access charges nothing.
+    if has_temp_access(uid):
+        return "free"
+
     plan_key = get_user_plan(uid, username, email)
     plan     = PLANS.get(plan_key, {})
     sub      = get_active_subscription(uid)

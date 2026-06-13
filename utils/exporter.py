@@ -205,20 +205,16 @@ def _set_run_font(run, font_name: str, size: int, bold=False, color: RGBColor = 
 
 
 def _add_heading(doc: Document, text: str, tpl: dict):
-    style = tpl["heading_style"]
     accent = tpl["accent"]
     para = doc.add_paragraph()
     para.paragraph_format.space_before = Pt(10)
-    para.paragraph_format.space_after = Pt(2)
+    para.paragraph_format.space_after = Pt(3)
 
     run = para.add_run(text.upper())
     _set_run_font(run, tpl["heading_font"], tpl["heading_size"], bold=True, color=accent)
 
-    if style == "border":
-        _add_bottom_border(para, accent)
-    else:
-        # underline the run
-        run.underline = True
+    # Every section heading gets a full-width divider line beneath it.
+    _add_bottom_border(para, accent)
     return para
 
 
@@ -242,26 +238,114 @@ def _add_name_contact(doc: Document, data: dict, tpl: dict):
     email = pi.get("email", "")
     phone = pi.get("phone", "")
     location = pi.get("location", "")
+    address = pi.get("address", "")
     linkedin = pi.get("linkedin", "")
     github = pi.get("github", "")
     website = pi.get("website", "")
     accent = tpl["accent"]
+    photo = data.get("photo_bytes")
 
-    # Name
-    name_para = doc.add_paragraph()
-    name_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    name_para.paragraph_format.space_after = Pt(2)
-    name_run = name_para.add_run(name)
-    _set_run_font(name_run, tpl["heading_font"], tpl["name_size"], bold=True, color=accent)
+    # Contact line excludes the full address (address gets its own line below).
+    # Small symbols prefix each contact item.
+    sym_parts = []
+    if email:    sym_parts.append(f"✉ {email}")     # ✉
+    if phone:    sym_parts.append(f"☎ {phone}")      # ☎
+    if linkedin: sym_parts.append(f"\U0001F517 {linkedin}")  # 🔗
+    if github:   sym_parts.append(f"\U0001F517 {github}")    # 🔗
+    if website:  sym_parts.append(f"\U0001F310 {website}")   # 🌐
+    contact_line = "   |   ".join(sym_parts)
+    addr_raw = address.strip() or location.strip()
+    addr_line = f"\U0001F4CD {addr_raw}" if addr_raw else ""   # 📍
 
-    # Contact line
-    contact_parts = [p for p in [email, phone, location, linkedin, github, website] if p]
-    if contact_parts:
-        c_para = doc.add_paragraph()
-        c_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        c_para.paragraph_format.space_after = Pt(6)
-        c_run = c_para.add_run("  |  ".join(contact_parts))
-        _set_run_font(c_run, tpl["font"], 9, color=RGBColor(0x44, 0x44, 0x44))
+    def _fill_header(name_align, contact_align):
+        name_para = doc.add_paragraph()
+        name_para.alignment = name_align
+        name_para.paragraph_format.space_after = Pt(2)
+        nr = name_para.add_run(name)
+        _set_run_font(nr, tpl["heading_font"], tpl["name_size"], bold=True, color=accent)
+        if contact_line:
+            cp = doc.add_paragraph()
+            cp.alignment = contact_align
+            cp.paragraph_format.space_after = Pt(1)
+            cr = cp.add_run(contact_line)
+            _set_run_font(cr, tpl["font"], 9, color=RGBColor(0x44, 0x44, 0x44))
+        if addr_line:
+            ap = doc.add_paragraph()
+            ap.alignment = contact_align
+            ap.paragraph_format.space_after = Pt(6)
+            ar = ap.add_run(addr_line)
+            _set_run_font(ar, tpl["font"], 9, color=RGBColor(0x55, 0x55, 0x55))
+
+    photo_ok = False
+    if photo:
+        # Two-column header: photo on the LEFT, name/contact/address beside it.
+        table = doc.add_table(rows=1, cols=2)
+        table.allow_autofit = False
+        left, right = table.cell(0, 0), table.cell(0, 1)
+        left.width = Cm(3.4)
+        right.width = Cm(13.0)
+        try:
+            run = left.paragraphs[0].add_run()
+            run.add_picture(io.BytesIO(photo), width=Cm(2.9))
+            photo_ok = True
+        except Exception:
+            # Bad/corrupt image — drop the table and use the centred header.
+            try:
+                table._element.getparent().remove(table._element)
+            except Exception:
+                pass
+    if not photo_ok:
+        _fill_header(WD_ALIGN_PARAGRAPH.CENTER, WD_ALIGN_PARAGRAPH.CENTER)
+        return
+
+    # Name + contact inside the right cell (left-aligned, vertically centred).
+    try:
+        right.vertical_alignment = 1  # CENTER
+    except Exception:
+        pass
+    rp = right.paragraphs[0]
+    nr = rp.add_run(name)
+    _set_run_font(nr, tpl["heading_font"], tpl["name_size"], bold=True, color=accent)
+    if contact_line:
+        cp = right.add_paragraph()
+        cr = cp.add_run(contact_line)
+        _set_run_font(cr, tpl["font"], 9, color=RGBColor(0x44, 0x44, 0x44))
+    if addr_line:
+        ap = right.add_paragraph()
+        ar = ap.add_run(addr_line)
+        _set_run_font(ar, tpl["font"], 9, color=RGBColor(0x55, 0x55, 0x55))
+    doc.add_paragraph().paragraph_format.space_after = Pt(4)
+
+
+def _add_declaration(doc: Document, data: dict, tpl: dict):
+    """Render a Declaration block at the very end of the resume."""
+    decl = (data.get("declaration") or "").strip()
+    if not decl:
+        return
+    _add_heading(doc, "Declaration", tpl)
+    p = doc.add_paragraph()
+    p.paragraph_format.space_after = Pt(4)
+    run = p.add_run(decl)
+    _set_run_font(run, tpl["font"], tpl["font_size"], color=tpl["text_color"])
+
+    pi = data.get("personal_info", {})
+    place = (data.get("declaration_place") or "").strip()
+    date = (data.get("declaration_date") or "").strip()
+    name = pi.get("name", "")
+
+    meta = "    ".join(filter(None, [f"Place: {place}" if place else "",
+                                     f"Date: {date}" if date else ""]))
+    if meta:
+        mp = doc.add_paragraph()
+        mp.paragraph_format.space_before = Pt(6)
+        mr = mp.add_run(meta)
+        _set_run_font(mr, tpl["font"], tpl["font_size"], color=tpl["text_color"])
+    if name:
+        sp = doc.add_paragraph()
+        sp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        sp.paragraph_format.space_before = Pt(2)
+        sr = sp.add_run(f"({name})")
+        _set_run_font(sr, tpl["font"], tpl["font_size"], bold=True, color=tpl["text_color"])
 
 
 def _section_text_to_docx(doc: Document, section_text: str, tpl: dict):
@@ -543,6 +627,9 @@ def _build_docx_from_resume_data(data: dict, template_id: str) -> bytes:
 
     for key in section_order:
         _add_sec(key)
+
+    # Declaration always renders last (if provided).
+    _add_declaration(doc, data, tpl)
 
     # Save to bytes
     buf = io.BytesIO()
@@ -947,12 +1034,17 @@ def export_resume_to_txt(resume_data: dict) -> str:
     name = pi.get("name") or resume_data.get("full_name", "")
     if name:
         lines.append(name)
-    contact = " | ".join(v for v in [
-        pi.get("email"), pi.get("phone"), pi.get("location"),
-        pi.get("linkedin"), pi.get("github")
-    ] if v)
+    _cparts = []
+    if pi.get("email"):    _cparts.append(f"✉ {pi['email']}")
+    if pi.get("phone"):    _cparts.append(f"☎ {pi['phone']}")
+    if pi.get("linkedin"): _cparts.append(f"\U0001F517 {pi['linkedin']}")
+    if pi.get("github"):   _cparts.append(f"\U0001F517 {pi['github']}")
+    contact = "  |  ".join(_cparts)
     if contact:
         lines.append(contact)
+    addr = (pi.get("address") or pi.get("location") or "").strip()
+    if addr:
+        lines.append(f"\U0001F4CD {addr}")
     lines.append("")
 
     if resume_data.get("summary"):
@@ -997,6 +1089,19 @@ def export_resume_to_txt(resume_data: dict) -> str:
                 lines.append(str(val))
             lines.append("")
 
+    decl = (resume_data.get("declaration") or "").strip()
+    if decl:
+        lines += ["DECLARATION", decl]
+        place = (resume_data.get("declaration_place") or "").strip()
+        date = (resume_data.get("declaration_date") or "").strip()
+        meta = "    ".join(filter(None, [f"Place: {place}" if place else "",
+                                         f"Date: {date}" if date else ""]))
+        if meta:
+            lines.append(meta)
+        if name:
+            lines.append(f"({name})")
+        lines.append("")
+
     return "\n".join(lines)
 
 
@@ -1005,12 +1110,14 @@ def get_template_preview_html(template_id: str) -> str:
     tpl = _resolve_template(template_id)
     accent_hex = f"#{str(tpl['accent'])}"
     font = tpl["font"]
-    border_style = f"border-bottom:2px solid {accent_hex}" if tpl["heading_style"] == "border" else f"text-decoration:underline;color:{accent_hex}"
+    # Every heading shows a full-width divider line beneath it.
+    border_style = f"border-bottom:1.5px solid {accent_hex};padding-bottom:2px"
 
     return f"""
 <div style="padding:10px;font-family:'{font}',Arial,sans-serif;font-size:8px;line-height:1.4;color:#222;width:100%">
   <div style="text-align:center;font-size:13px;font-weight:700;color:{accent_hex};margin-bottom:3px">CANDIDATE NAME</div>
-  <div style="text-align:center;font-size:7px;color:#666;margin-bottom:8px">email@example.com  |  +91 98765 43210  |  Hyderabad, India</div>
+  <div style="text-align:center;font-size:7px;color:#666;margin-bottom:2px">✉ email@example.com  |  ☎ +91 98765 43210  |  🔗 linkedin.com/in/name</div>
+  <div style="text-align:center;font-size:7px;color:#888;margin-bottom:8px">📍 Hyderabad, India</div>
   <div style="font-size:8px;font-weight:700;color:{accent_hex};{border_style};padding-bottom:2px;margin-bottom:4px">PROFESSIONAL SUMMARY</div>
   <div style="font-size:7.5px;color:#333;margin-bottom:6px">Results-driven professional with expertise in data analysis and strategic planning, seeking to leverage skills in a growth-oriented role...</div>
   <div style="font-size:8px;font-weight:700;color:{accent_hex};{border_style};padding-bottom:2px;margin-bottom:4px">WORK EXPERIENCE</div>

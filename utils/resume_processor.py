@@ -611,6 +611,81 @@ def _rewrite_skills(raw: str, jd_phrases: list) -> tuple:
 # COVER LETTER GENERATOR — JD-specific, role-aware
 # ═══════════════════════════════════════════════════════════════════════
 
+def _ensure_bullet(line: str) -> str:
+    s = line.strip()
+    s = re.sub(r'^\s*\d+[\.\)]\s*', '', s)          # strip "1." / "1)"
+    s = s.lstrip('•-*–◦·').strip()
+    if not s:
+        return ""
+    s = s[0].upper() + s[1:]
+    return "• " + s
+
+
+def ai_write_bullets(raw: str, role: str = "", org: str = "", industry: str = "") -> str:
+    """
+    Turn a user's plain description/prompt into polished, ATS-friendly resume
+    bullets (one per line, each starting with '• '). Uses the local LLM when
+    available; otherwise cleanly formats the input into bullets. Never fabricates.
+    """
+    raw = (raw or "").strip()
+    if not raw:
+        return ""
+    # ── LLM path ──────────────────────────────────────────────
+    try:
+        from utils import llm
+        if llm.ollama_available():
+            system = ("You rewrite rough notes into professional, ATS-friendly resume bullet points. "
+                      "Use strong action verbs and keep each bullet to one line. Be truthful to the input — "
+                      "do NOT invent employers, tools, metrics or achievements that are not implied. "
+                      "Return ONLY the bullets, each on its own line starting with '• '.")
+            ctx = []
+            if role: ctx.append(f"role: {role}")
+            if org: ctx.append(f"organisation: {org}")
+            if industry: ctx.append(f"industry: {industry}")
+            ctxs = (" (" + "; ".join(ctx) + ")") if ctx else ""
+            prompt = (f"Rewrite the following into 3-5 concise resume bullet points{ctxs}. "
+                      f"Each bullet on its own line starting with '• '.\n\nNOTES:\n{raw}")
+            out = llm.generate(prompt, system=system, temperature=0.3, timeout=90)
+            if out:
+                lines = [_ensure_bullet(l) for l in out.splitlines()]
+                lines = [l for l in lines if len(l) > 4]
+                if lines:
+                    return "\n".join(lines[:6])
+    except Exception:
+        pass
+    # ── Rule-based fallback: split into clean bullets ─────────
+    parts = re.split(r'[\n;]+', raw)
+    if len(parts) == 1:
+        parts = re.split(r',\s+(?=[A-Za-z])', raw)   # fall back to comma-separated
+    bullets = [_ensure_bullet(p) for p in parts]
+    bullets = [b for b in bullets if b]
+    return "\n".join(bullets) if bullets else _ensure_bullet(raw)
+
+
+def ai_write_summary(raw: str, name: str = "", industry: str = "") -> str:
+    """Rewrite a rough objective/summary prompt into a polished 3-4 sentence
+    professional summary. LLM when available; otherwise returns tidied input."""
+    raw = (raw or "").strip()
+    if not raw:
+        return ""
+    try:
+        from utils import llm
+        if llm.ollama_available():
+            system = ("You write concise, professional resume summaries. Keep it to 3-4 sentences, "
+                      "no headings, first-person implied. Be truthful to the input — never invent "
+                      "experience, degrees, employers or numbers.")
+            prompt = (f"Rewrite this into a polished professional summary for a "
+                      f"{industry or 'professional'} resume:\n\n{raw}")
+            out = llm.generate(prompt, system=system, temperature=0.3, timeout=90)
+            if out and len(out.strip()) > 25:
+                return out.strip().strip('"')
+    except Exception:
+        pass
+    # Fallback: tidy capitalisation / whitespace
+    s = re.sub(r'\s+', ' ', raw).strip()
+    return s[0].upper() + s[1:] if s else s
+
+
 def _cover_letter_facts(resume_text: str, jd: str):
     """Extract the candidate-specific facts a letter should be built from."""
     kws          = extract_keywords_from_jd(jd) if jd else []

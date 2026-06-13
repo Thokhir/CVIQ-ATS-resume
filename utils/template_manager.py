@@ -370,14 +370,13 @@ def render_template_preview_html(template_id: str, max_sections: int = 5) -> str
     hstyle = tpl.get("heading_style", "border")
     order = tpl.get("section_order", ["summary", "experience", "education", "skills"])
 
-    if hstyle == "border":
-        head_css = f"border-bottom:1.5px solid {acc};padding-bottom:1px"
-    else:
-        head_css = f"text-decoration:underline;text-underline-offset:2px"
+    # Every section heading shows a full-width divider line beneath it.
+    head_css = f"border-bottom:1.4px solid {acc};padding-bottom:1px"
 
     blocks = [
         f'<div style="text-align:center;font-size:13px;font-weight:800;color:{acc};letter-spacing:.3px">ALEX MORGAN</div>',
-        '<div style="text-align:center;font-size:6.5px;color:#777;margin-bottom:6px">alex.morgan@email.com · +91 98765 43210 · Bengaluru, India</div>',
+        '<div style="text-align:center;font-size:6.5px;color:#777;margin-bottom:1px">✉ alex.morgan@email.com · ☎ +91 98765 43210 · 🔗 linkedin.com/in/alex</div>',
+        '<div style="text-align:center;font-size:6.5px;color:#999;margin-bottom:6px">📍 Bengaluru, India</div>',
     ]
     for key in order[:max_sections]:
         label = SECTION_LABELS.get(key, key.title())

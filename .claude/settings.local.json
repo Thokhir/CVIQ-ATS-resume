@@ -7,7 +7,26 @@
       "Bash(python -c \"from utils.resume_processor import generate_cover_letter; print\\(generate_cover_letter\\('Jane Doe\\\\nSUMMARY\\\\nMarketing lead.\\\\nEXPERIENCE\\\\n- Grew revenue 40% in 12 months','Seeking marketing manager with SEO and analytics','Acme','Hiring Manager','Professional'\\)[:300]\\)\")",
       "Bash(python -m py_compile app.py)",
       "Bash(python -m py_compile app.py utils/*.py)",
-      "Bash(PYTHONIOENCODING=utf-8 python -c ' *)"
+      "Bash(PYTHONIOENCODING=utf-8 python -c ' *)",
+      "Bash(PYTHONIOENCODING=utf-8 grep -n \"^def \\\\|return out\\\\|return result\\\\|^# ═\" app.py)",
+      "Bash(awk -F: '$1>=2230 && $1<=2420')",
+      "Bash(PYTHONIOENCODING=utf-8 python _splice.py)",
+      "Bash(rm _splice.py)",
+      "Bash(PYTHONIOENCODING=utf-8 python _restyle.py)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(PYTHONIOENCODING=utf-8 python _restyle2.py)",
+      "Bash(git fetch *)",
+      "Bash(git rev-list *)",
+      "Bash(git checkout *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(gh pr create --base main --head fix/dashboard-nav-interview-count-futuristic-ui --title 'Fix dashboard nav + interview-count bug; refine UI to calm premium theme' --body ' *)",
+      "PowerShell($g = Get-Command gh -ErrorAction SilentlyContinue; if \\($g\\) { \"FOUND: $\\($g.Source\\)\" } else { \"NOT FOUND\" })",
+      "Bash(git credential *)",
+      "Bash(PYTHONIOENCODING=utf-8 grep -n 'Address: {addr_line}' utils/exporter.py)",
+      "Bash(python -)",
+      "Bash(python -m py_compile utils/exporter.py)"
     ]
   }
 }

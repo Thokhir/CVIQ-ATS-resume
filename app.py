@@ -60,7 +60,7 @@ from utils.resume_processor import (
 from utils.resume_processor import (
     extract_text_from_file, parse_resume_text,
     optimize_resume_for_jd, extract_keywords_from_jd,
-    generate_cover_letter,
+    generate_cover_letter, ai_write_summary, ai_write_bullets,
 )
 from utils.exporter import (
     export_resume_to_docx, export_resume_to_txt,
@@ -898,14 +898,32 @@ def show_resume_builder():
             location = st.text_input("Location / City", placeholder="Hyderabad, India")
             linkedin = st.text_input("LinkedIn URL", placeholder="linkedin.com/in/priyasharma")
             github = st.text_input("GitHub / Portfolio URL", placeholder="github.com/priyasharma")
+        address = st.text_input("Address (shown under name & contact)",
+                                placeholder="H.No 1-2-3, Street, Area, City, State – PIN")
         website = st.text_input("Website (optional)", placeholder="https://priyasharma.dev")
+
+        # ── Photograph (top-left, beside the heading) ─────────
+        photo_file = st.file_uploader(
+            "📷 Profile Photograph (optional — placed top-left beside your name)",
+            type=["png", "jpg", "jpeg"], key="builder_photo")
+        if photo_file:
+            st.image(photo_file, width=110, caption="Preview")
+
+        # ── AI enhancement toggle ─────────────────────────────
+        _ai_on = llm.ollama_available()
+        ai_enhance = st.checkbox(
+            "✨ Let AI rewrite my Objective, Experience & Project descriptions into polished bullets",
+            value=True,
+            help=("Type rough notes in those fields — they'll be rewritten on generate. "
+                  + ("On-device AI (Ollama) detected." if _ai_on
+                     else "No local AI detected: notes are cleanly formatted into bullets instead.")))
 
         # ── Objective / Summary ──────────────────────────────
         st.markdown("### 🎯 Career Objective / Professional Summary")
         summary = st.text_area(
             "Objective",
             height=100,
-            placeholder="A brief 3–4 sentence summary of who you are, what you're looking for, and what you bring. For freshers: state your degree, interest area, and career goal.",
+            placeholder="Write a few rough words about your goal — e.g. 'fresher medical lab technician, good at NABL documentation, want a lab role'. AI will turn it into a polished summary.",
             label_visibility="collapsed"
         )
 
@@ -990,9 +1008,9 @@ def show_resume_builder():
                     exp_end = st.text_input("End Date / Present", key=f"xe_{i}", placeholder="Aug 2023")
                     exp_location = st.text_input("Location", key=f"xl_{i}", placeholder="Hyderabad")
                 desc = st.text_area(
-                    "Responsibilities & Achievements (one bullet per line, start each with •)",
+                    "Responsibilities & Achievements — type simple notes; AI rewrites them into polished bullets",
                     key=f"xd_{i}", height=100,
-                    placeholder="• Developed a Python script automating data extraction, reducing manual effort by 60%\n• Collaborated with team of 5 engineers on REST API development"
+                    placeholder="Just list what you did, e.g.:\nNABL file creation, sample collection, daily QC reports\n(or one point per line — AI will turn these into strong bullet points)"
                 )
                 experiences.append({
                     "position": position, "company": company,
@@ -1018,9 +1036,9 @@ def show_resume_builder():
                                               placeholder="github.com/username/project")
                     proj_date = st.text_input("Year / Period", key=f"pdate_{i}", placeholder="2023")
                 proj_desc = st.text_area(
-                    "Description (one bullet per line)",
+                    "Description — type simple notes; AI rewrites them into polished bullets",
                     key=f"pdesc_{i}", height=80,
-                    placeholder="• Built a CNN model achieving 94% accuracy on 10,000 plant disease images\n• Deployed as Flask web app with <200ms inference time"
+                    placeholder="e.g. PCR profiling of genes in waste-water bacteria; analysed antibiotic resistance\n(AI will expand this into strong project bullets)"
                 )
                 projects.append({
                     "title": proj_title, "tech": proj_tech, "link": proj_link,
@@ -1063,6 +1081,19 @@ def show_resume_builder():
             label_visibility="collapsed"
         )
 
+        # ── Declaration ───────────────────────────────────────
+        st.markdown("### ✍️ Declaration (placed at the end)")
+        include_declaration = st.checkbox("Include a declaration at the end of the resume", value=True)
+        declaration_text = st.text_area(
+            "Declaration text",
+            value="I hereby declare that the above information is true and correct to the best of my knowledge and belief.",
+            height=70, label_visibility="collapsed")
+        dc1, dc2 = st.columns(2)
+        with dc1:
+            decl_place = st.text_input("Place", placeholder="Hyderabad")
+        with dc2:
+            decl_date = st.text_input("Date", placeholder="e.g. 13 Jun 2026")
+
         # ── Submit ────────────────────────────────────────────
         submitted = st.form_submit_button("🎯 Generate & Download Resume", use_container_width=True, type="primary")
 
@@ -1071,7 +1102,26 @@ def show_resume_builder():
             st.error("Full Name and Email are required")
             return
 
-        # Build data dict
+        exp_clean = [e for e in experiences if e.get("position") or e.get("company")]
+        proj_clean = [p for p in projects if p.get("title")]
+        final_summary = summary.strip()
+
+        # ── AI / rule-based rewrite of free-text fields ───────
+        if ai_enhance:
+            with st.spinner("✨ Rewriting your descriptions into polished bullets..."):
+                if final_summary:
+                    final_summary = ai_write_summary(final_summary, full_name.strip(), industry)
+                for e in exp_clean:
+                    if e.get("description", "").strip():
+                        e["description"] = ai_write_bullets(
+                            e["description"], role=e.get("position", ""),
+                            org=e.get("company", ""), industry=industry)
+                for p in proj_clean:
+                    if p.get("description", "").strip():
+                        p["description"] = ai_write_bullets(
+                            p["description"], role=p.get("title", ""), industry=industry)
+
+        # Build data dict (JSON-serialisable — no image bytes)
         resume_data = {
             "template_name": selected_template_id,
             "personal_info": {
@@ -1079,29 +1129,41 @@ def show_resume_builder():
                 "email": email.strip(),
                 "phone": phone.strip(),
                 "location": location.strip(),
+                "address": address.strip(),
                 "linkedin": linkedin.strip(),
                 "github": github.strip(),
                 "website": website.strip(),
             },
-            "summary": summary.strip(),
+            "summary": final_summary,
             "education": [e for e in educations if e.get("degree") or e.get("school")],
-            "experience": [e for e in experiences if e.get("position") or e.get("company")],
+            "experience": exp_clean,
             "skill_categories": skill_cats,
             "skills": ", ".join(
                 item for cat_items in skill_cats.values()
                 for item in (cat_items if isinstance(cat_items, list) else [cat_items])
             ),
-            "projects": [p for p in projects if p.get("title")],
+            "projects": proj_clean,
             "certifications": [c.strip() for c in certifications_text.split("\n") if c.strip()],
             "awards": [a.strip() for a in awards_text.split("\n") if a.strip()],
             "publications": [p.strip() for p in publications_text.split("\n") if p.strip()],
             "languages": languages_spoken.strip(),
             "activities": activities_text.strip(),
+            "declaration": declaration_text.strip() if include_declaration else "",
+            "declaration_place": decl_place.strip(),
+            "declaration_date": decl_date.strip(),
         }
 
+        # Export payload also carries the photo (bytes can't be saved as JSON)
+        export_data = dict(resume_data)
+        if photo_file is not None:
+            try:
+                export_data["photo_bytes"] = photo_file.getvalue()
+            except Exception:
+                pass
+
         with st.spinner("Building your resume with template formatting..."):
-            docx_bytes = export_resume_to_docx(resume_data, selected_template_id)
-            txt_content = export_resume_to_txt(resume_data)
+            docx_bytes = export_resume_to_docx(export_data, selected_template_id)
+            txt_content = export_resume_to_txt(export_data)
             resume_id = save_resume(
                 st.session_state.user_id, full_name,
                 resume_data, selected_template_id

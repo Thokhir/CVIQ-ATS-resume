@@ -75,181 +75,208 @@ init_db()
 # ══════════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
-/* ── CSS TOKENS ─────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+/* ── DESIGN TOKENS — calm / premium dark (Linear/Vercel direction) ── */
 :root{
-  --bg:#0f1117;--surface:#1a1d27;--surface2:#222536;
-  --border:#2a2d3e;--border2:#353850;
-  --accent:#6366f1;--accent2:#818cf8;--accent-soft:rgba(99,102,241,.15);
-  --green:#22c55e;--green-soft:rgba(34,197,94,.15);
-  --red:#ef4444;--red-soft:rgba(239,68,68,.12);
-  --amber:#f59e0b;--amber-soft:rgba(245,158,11,.12);
-  --text:#e2e4ef;--muted:#6b7280;--muted2:#4b5563;
-  --radius:10px;--radius-sm:6px;--shadow:0 4px 24px rgba(0,0,0,.4);
+  --bg:#08090c;--bg2:#0a0b10;
+  --surface:#111319;--surface2:#171922;--surface3:#1c1f2b;
+  --glass:rgba(20,22,30,.7);--glass-brd:rgba(255,255,255,.07);
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.12);
+  --accent:#6d7cff;--accent2:#8b96ff;--accent-quiet:#5b67e8;
+  --accent-soft:rgba(109,124,255,.14);
+  --grad:linear-gradient(135deg,#6d7cff,#5b67e8);
+  --grad-soft:linear-gradient(135deg,rgba(109,124,255,.16),rgba(91,103,232,.10));
+  --green:#3ecf8e;--green-soft:rgba(62,207,142,.13);
+  --red:#f1707b;--red-soft:rgba(241,112,123,.12);
+  --amber:#e7b549;--amber-soft:rgba(231,181,73,.12);
+  --text:#edeef2;--muted:#8b91a3;--muted2:#5a6072;
+  --radius:14px;--radius-sm:10px;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 28px rgba(0,0,0,.32);
 }
 
-/* ── Streamlit root overrides ───────────────────────────── */
-.stApp{background:var(--bg)!important}
-section[data-testid="stSidebar"]{background:var(--surface)!important;border-right:1px solid var(--border)!important}
-section[data-testid="stSidebar"] *{color:var(--text)!important}
-.block-container{padding:1.5rem 1.5rem 3rem!important}
+/* ── Calm canvas: one subtle aurora at the top, no busy grid ─────── */
+.stApp{
+  background:
+    radial-gradient(900px 520px at 50% -180px,rgba(109,124,255,.13),transparent 70%),
+    linear-gradient(180deg,var(--bg),var(--bg2))!important;
+  background-attachment:fixed!important;
+  color:var(--text)!important;
+  font-family:'Inter',system-ui,-apple-system,sans-serif!important;
+  -webkit-font-smoothing:antialiased;
+}
+.block-container{padding:1.4rem 1.6rem 4rem!important;max-width:1240px}
+*{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.16) transparent}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:9px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.26)}
 
-/* ── Sidebar logo ───────────────────────────────────────── */
-.logo-box{display:flex;align-items:center;gap:10px;padding:4px 0 16px;border-bottom:1px solid var(--border);margin-bottom:12px}
-.logo-mark{background:var(--accent);color:#fff;font-weight:800;font-size:13px;width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;letter-spacing:.5px;flex-shrink:0}
-.logo-text{font-weight:700;font-size:15px}
-.logo-sub{font-size:10px;color:var(--muted);margin-top:1px}
-.nav-group{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;padding:10px 0 4px;border-bottom:1px solid var(--border);margin-bottom:4px}
-.user-chip{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border-radius:var(--radius-sm);margin-bottom:8px}
-.plan-chip{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--accent-soft);border-radius:var(--radius-sm);border:1px solid rgba(99,102,241,.2);margin-bottom:8px;font-size:12px;font-weight:600;color:var(--accent2)}
+/* ── Sidebar (glass kept here — it's a chrome element) ───────────── */
+section[data-testid="stSidebar"]{
+  background:rgba(13,15,21,.86)!important;
+  border-right:1px solid var(--border)!important;backdrop-filter:blur(16px);
+}
+section[data-testid="stSidebar"] *{color:var(--text)}
+.logo-box{display:flex;align-items:center;gap:11px;padding:6px 0 16px;border-bottom:1px solid var(--border);margin-bottom:14px}
+.logo-mark{background:var(--grad);color:#fff;font-weight:800;font-size:13px;width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;letter-spacing:.5px;flex-shrink:0;box-shadow:0 4px 16px rgba(109,124,255,.4)}
+.logo-text{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;letter-spacing:.2px}
+.logo-sub{font-size:10px;color:var(--muted);margin-top:1px;letter-spacing:.3px}
+.nav-group{font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:1.3px;padding:14px 0 6px;margin-bottom:2px}
+.user-chip{display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:9px}
+.plan-chip{display:flex;align-items:center;justify-content:space-between;padding:7px 11px;background:var(--accent-soft);border-radius:var(--radius-sm);border:1px solid rgba(109,124,255,.22);margin-bottom:8px;font-size:12px;font-weight:700;color:var(--accent2)}
 
-/* ── Cards ──────────────────────────────────────────────── */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px}
-.card-hd{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+/* ── Flat, high-contrast content cards (no blur — crisp + fast) ──── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:18px;box-shadow:var(--shadow);transition:border-color .18s,transform .18s}
+.card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.card-hd{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;margin-bottom:15px;padding-bottom:11px;border-bottom:1px solid var(--border);letter-spacing:.2px}
 
-/* ── Step bar ───────────────────────────────────────────── */
-.step-bar{display:flex;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:20px;gap:0}
-.step{display:flex;align-items:center;gap:7px;flex-shrink:0}
-.step-num{width:26px;height:26px;border-radius:50%;background:var(--surface2);border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--muted)}
-.step.active .step-num{border-color:var(--accent);background:var(--accent-soft);color:var(--accent2)}
-.step.done .step-num{background:var(--green);border-color:var(--green);color:#fff}
-.step-label{font-size:12px;font-weight:500;color:var(--muted)}
+/* ── Page header ────────────────────────────────────────────────── */
+.ph h2{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;margin-bottom:4px;color:#fff;letter-spacing:-.3px}
+.ph p{color:var(--muted);font-size:13px;margin:0}
+
+/* ── Step bar ───────────────────────────────────────────────────── */
+.step-bar{display:flex;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:22px;gap:0}
+.step{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--surface3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted);transition:.25s}
+.step.active .step-num{border-color:transparent;background:var(--grad);color:#fff}
+.step.done .step-num{background:var(--green);border-color:var(--green);color:#04210f}
+.step-label{font-size:12px;font-weight:600;color:var(--muted)}
 .step.active .step-label,.step.done .step-label{color:var(--text)}
-.step-line{flex:1;height:1px;background:var(--border2);margin:0 10px}
+.step-line{flex:1;height:1px;background:var(--border2);margin:0 12px}
 
-/* ── Score ring ─────────────────────────────────────────── */
-.score-wrap{display:flex;align-items:center;gap:20px;padding:6px 0}
+/* ── Score ring ─────────────────────────────────────────────────── */
+.score-wrap{display:flex;align-items:center;gap:22px;padding:6px 0}
 .score-ring-box{position:relative;flex-shrink:0}
 .score-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
-.score-num{font-size:26px;font-weight:800}
+.score-num{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:800}
 .score-denom{font-size:11px;color:var(--muted)}
 .score-metrics{flex:1;min-width:0}
 .metric{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px}
 .metric-label{color:var(--muted)}
-.metric-val{font-weight:600}
-.metric-bar{height:4px;background:var(--surface2);border-radius:2px;margin-bottom:8px;overflow:hidden}
-.metric-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:2px}
+.metric-val{font-weight:700}
+.metric-bar{height:5px;background:var(--surface3);border-radius:3px;margin-bottom:9px;overflow:hidden}
+.metric-fill{height:100%;background:var(--grad);border-radius:3px}
 
-/* ── Keywords ───────────────────────────────────────────── */
-.kw-legend{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
-.kw-chip{font-size:11px;font-weight:600;padding:3px 8px;border-radius:10px}
+/* ── Keywords ───────────────────────────────────────────────────── */
+.kw-legend{display:flex;gap:10px;margin-bottom:11px;flex-wrap:wrap}
+.kw-chip{font-size:11px;font-weight:700;padding:3px 9px;border-radius:11px}
 .kw-chip.found{background:var(--green-soft);color:var(--green)}
 .kw-chip.missing{background:var(--red-soft);color:var(--red)}
 .kw-cloud{display:flex;flex-wrap:wrap;gap:7px;min-height:50px;padding:4px 0}
-.kw-tag{font-size:12px;padding:4px 10px;border-radius:12px;font-weight:500}
-.kw-tag.found{background:var(--green-soft);color:var(--green);border:1px solid rgba(34,197,94,.2)}
-.kw-tag.missing{background:var(--red-soft);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.kw-tag{font-size:12px;padding:5px 12px;border-radius:18px;font-weight:600;transition:transform .14s}
+.kw-tag:hover{transform:translateY(-1px)}
+.kw-tag.found{background:var(--green-soft);color:var(--green);border:1px solid rgba(62,207,142,.26)}
+.kw-tag.missing{background:var(--red-soft);color:var(--red);border:1px solid rgba(241,112,123,.26)}
 .kw-empty{color:var(--muted);font-size:12px}
 
-/* ── Suggestions ────────────────────────────────────────── */
-.sug{padding:12px;border-radius:var(--radius-sm);margin-bottom:8px;border-left:3px solid}
+/* ── Suggestion banners ─────────────────────────────────────────── */
+.sug{padding:14px 16px;border-radius:var(--radius-sm);margin-bottom:10px;border-left:3px solid}
 .sug.info{background:var(--accent-soft);border-color:var(--accent)}
 .sug.warn{background:var(--amber-soft);border-color:var(--amber)}
 .sug.ok{background:var(--green-soft);border-color:var(--green)}
 .sug.err{background:var(--red-soft);border-color:var(--red)}
-.sug-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;color:var(--muted)}
-.sug-body{font-size:12px;line-height:1.5}
+.sug-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.9px;margin-bottom:4px;color:var(--muted)}
+.sug-body{font-size:12.5px;line-height:1.6}
 
-/* ── Output ─────────────────────────────────────────────── */
-.out-stats{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
-.out-stat{background:var(--surface2);padding:3px 9px;border-radius:10px;border:1px solid var(--border)}
-.badge-green{background:var(--green-soft);color:var(--green);font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;margin-left:auto}
+/* ── Output stats / badges ──────────────────────────────────────── */
+.out-stats{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
+.out-stat{background:var(--surface2);padding:4px 11px;border-radius:18px;border:1px solid var(--border)}
+.badge-green{background:var(--green-soft);color:var(--green);font-size:10px;font-weight:800;padding:3px 10px;border-radius:18px;margin-left:auto;border:1px solid rgba(62,207,142,.26)}
 
-/* ── Template gallery ───────────────────────────────────── */
-.tpl-card{border:2px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:.2s;margin-bottom:16px}
-.tpl-card:hover{border-color:var(--accent);box-shadow:var(--shadow)}
-.tpl-card.sel{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+/* ── Template gallery (flat surfaces — fast with 21 cards) ──────── */
+.tpl-card{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:border-color .18s,transform .18s;margin-bottom:16px;background:var(--surface)}
+.tpl-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.tpl-card.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .tpl-preview{height:200px;overflow:hidden;background:#fff}
-.tpl-info{padding:10px 12px;background:var(--surface)}
+.tpl-info{padding:11px 13px}
 .tpl-name{font-size:13px;font-weight:700;margin-bottom:2px}
 .tpl-desc{font-size:11px;color:var(--muted)}
-.badge-free{background:var(--green-soft);color:var(--green);font-size:9px;font-weight:700;padding:1px 6px;border-radius:6px;margin-left:6px}
-.badge-pro{background:var(--accent-soft);color:var(--accent2);font-size:9px;font-weight:700;padding:1px 6px;border-radius:6px;margin-left:6px}
+.badge-free{background:var(--green-soft);color:var(--green);font-size:9px;font-weight:800;padding:2px 7px;border-radius:7px;margin-left:6px}
+.badge-pro{background:var(--accent-soft);color:var(--accent2);font-size:9px;font-weight:800;padding:2px 7px;border-radius:7px;margin-left:6px}
 
-/* ── Stats ──────────────────────────────────────────────── */
-.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px}
-.stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
-.stat-val{font-size:24px;font-weight:800}
+/* ── Stats cards (flat, one quiet accent glow) ──────────────────── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden;transition:border-color .18s,transform .18s}
+.stat-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px}
+.stat-val{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:800}
 
-/* ── Login ──────────────────────────────────────────────── */
-.login-wrap{max-width:480px;margin:60px auto 0;padding:32px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
-.login-logo{text-align:center;margin-bottom:24px}
-.login-logo .mark{display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;background:var(--accent);border-radius:12px;font-size:20px;font-weight:900;color:#fff;margin-bottom:8px}
-.login-title{font-size:22px;font-weight:800;text-align:center;margin-bottom:4px}
-.login-sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:24px}
+/* ── Login (glass kept — it's a hero element) ───────────────────── */
+.login-wrap{max-width:480px;margin:54px auto 0;padding:34px;background:var(--glass);border:1px solid var(--glass-brd);border-radius:20px;backdrop-filter:blur(18px);box-shadow:0 24px 80px rgba(0,0,0,.55)}
+.login-logo{text-align:center;margin-bottom:22px}
+.login-logo .mark{display:inline-flex;align-items:center;justify-content:center;width:60px;height:60px;background:var(--grad);border-radius:16px;font-size:21px;font-weight:900;color:#fff;margin-bottom:10px;box-shadow:0 10px 30px rgba(109,124,255,.45)}
+.login-title{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;text-align:center;margin-bottom:4px;color:#fff;letter-spacing:-.3px}
+.login-sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:22px}
 .tab-row{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px}
-.tab-btn{flex:1;text-align:center;padding:10px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted)}
+.tab-btn{flex:1;text-align:center;padding:11px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:var(--muted)}
 .tab-btn.active{color:var(--accent2);border-bottom-color:var(--accent)}
 
-/* ── History items ──────────────────────────────────────── */
-.hist-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:14px}
-.hist-score{width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0}
+/* ── History items ──────────────────────────────────────────────── */
+.hist-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:13px 15px;margin-bottom:10px;display:flex;align-items:center;gap:14px;transition:border-color .16s}
+.hist-item:hover{border-color:var(--border2)}
+.hist-score{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0}
 
-/* ── Platform bars ──────────────────────────────────────── */
-.plat-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
-.plat-name{width:90px;font-size:12px;color:var(--muted);flex-shrink:0}
-.plat-bar{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
-.plat-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:3px}
-.plat-pct{width:40px;text-align:right;font-size:12px;font-weight:600}
+/* ── Platform bars ──────────────────────────────────────────────── */
+.plat-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.plat-name{width:92px;font-size:12px;color:var(--muted);flex-shrink:0}
+.plat-bar{flex:1;height:6px;background:var(--surface3);border-radius:4px;overflow:hidden}
+.plat-fill{height:100%;background:var(--grad);border-radius:4px}
+.plat-pct{width:42px;text-align:right;font-size:12px;font-weight:700}
 
-/* ── Pricing ────────────────────────────────────────────── */
-.price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.price-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;position:relative}
+/* ── Pricing ────────────────────────────────────────────────────── */
+.price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.price-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;position:relative;transition:border-color .18s,transform .18s}
+.price-card:hover{border-color:var(--border2);transform:translateY(-2px)}
 .price-card.featured{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
-.pop-badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:9px;font-weight:800;padding:2px 10px;border-radius:8px;white-space:nowrap}
+.pop-badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--grad);color:#fff;font-size:9px;font-weight:800;padding:3px 12px;border-radius:18px;white-space:nowrap}
 .price-tier{font-size:18px;font-weight:800;margin-bottom:4px}
-.price-val{font-size:30px;font-weight:800;margin-bottom:12px}
+.price-val{font-family:'Space Grotesk',sans-serif;font-size:31px;font-weight:800;margin-bottom:12px}
 .price-val span{font-size:13px;font-weight:400;color:var(--muted)}
-.price-features{list-style:none;font-size:12px}
-.price-features li{padding:4px 0;display:flex;gap:8px}
-.price-features li::before{content:'✓';color:var(--green);font-weight:700}
+.price-features{list-style:none;font-size:12px;padding:0}
+.price-features li{padding:5px 0;display:flex;gap:8px}
+.price-features li::before{content:'✓';color:var(--green);font-weight:800}
 .price-features li.no::before{content:'✕';color:var(--muted)}
 .price-features li.no{color:var(--muted)}
 
-/* ── Section breakdown ──────────────────────────────────── */
-.sec-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
+/* ── Section breakdown ──────────────────────────────────────────── */
+.sec-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
 .sec-row:last-child{border-bottom:none}
 .sec-name{font-size:12px;font-weight:600;width:110px;flex-shrink:0}
-.sec-bar{flex:1;height:5px;background:var(--surface2);border-radius:3px;overflow:hidden}
-.sec-fill{height:100%;border-radius:3px}
-.sec-pct{font-size:11px;font-weight:700;width:35px;text-align:right}
+.sec-bar{flex:1;height:6px;background:var(--surface3);border-radius:4px;overflow:hidden}
+.sec-fill{height:100%;border-radius:4px}
+.sec-pct{font-size:11px;font-weight:800;width:36px;text-align:right}
 
-/* ── Page header ────────────────────────────────────────── */
-.ph h2{font-size:22px;font-weight:700;margin-bottom:3px}
-.ph p{color:var(--muted);font-size:13px;margin:0}
-
-/* ── Streamlit widget overrides ─────────────────────────── */
-.stTextInput input,.stTextArea textarea,.stSelectbox div[data-baseweb],.stNumberInput input{
+/* ── Streamlit widget overrides (flat, crisp) ───────────────────── */
+.stTextInput input,.stTextArea textarea,.stNumberInput input{
   background:var(--surface2)!important;border:1px solid var(--border2)!important;
-  border-radius:var(--radius-sm)!important;color:var(--text)!important;font-size:13px!important
-}
-.stTextInput input:focus,.stTextArea textarea:focus{border-color:var(--accent)!important;
-  box-shadow:0 0 0 3px var(--accent-soft)!important}
+  border-radius:var(--radius-sm)!important;color:var(--text)!important;font-size:13px!important}
+.stSelectbox div[data-baseweb]{background:var(--surface2)!important;border-radius:var(--radius-sm)!important;border:1px solid var(--border2)!important;color:var(--text)!important}
+.stTextInput input:focus,.stTextArea textarea:focus{border-color:var(--accent)!important;box-shadow:0 0 0 3px var(--accent-soft)!important}
 .stButton>button{background:var(--surface2)!important;border:1px solid var(--border2)!important;
   border-radius:var(--radius-sm)!important;color:var(--text)!important;font-weight:600!important;
-  font-size:13px!important;transition:all .15s!important}
-.stButton>button:hover{border-color:var(--accent)!important;color:var(--accent2)!important}
-.stButton[data-testid="baseButton-primary"]>button{background:var(--accent)!important;
-  border-color:var(--accent)!important;color:#fff!important}
-.stButton[data-testid="baseButton-primary"]>button:hover{background:var(--accent2)!important}
-.stDownloadButton>button{background:var(--accent)!important;border:none!important;
-  color:#fff!important;font-weight:700!important}
-.stTabs [data-baseweb="tab-list"]{background:var(--surface2)!important;border-radius:var(--radius-sm)!important;gap:4px!important;padding:4px!important}
-.stTabs [data-baseweb="tab"]{border-radius:4px!important;color:var(--muted)!important}
-.stTabs [aria-selected="true"]{background:var(--accent-soft)!important;color:var(--accent2)!important}
+  font-size:13px!important;transition:all .16s!important}
+.stButton>button:hover{border-color:var(--accent)!important;color:#fff!important;background:var(--surface3)!important}
+.stButton>button[kind="primary"],.stButton button[data-testid="baseButton-primary"]{background:var(--grad)!important;border:none!important;color:#fff!important;box-shadow:0 2px 10px rgba(109,124,255,.3)!important}
+.stButton>button[kind="primary"]:hover{box-shadow:0 4px 16px rgba(109,124,255,.45)!important;transform:translateY(-1px)}
+.stDownloadButton>button{background:var(--grad)!important;border:none!important;color:#fff!important;font-weight:700!important;border-radius:var(--radius-sm)!important}
+.stDownloadButton>button:hover{transform:translateY(-1px)}
+.stTabs [data-baseweb="tab-list"]{background:var(--surface2)!important;border-radius:var(--radius-sm)!important;gap:4px!important;padding:5px!important;border:1px solid var(--border)!important}
+.stTabs [data-baseweb="tab"]{border-radius:8px!important;color:var(--muted)!important}
+.stTabs [aria-selected="true"]{background:var(--accent-soft)!important;color:#fff!important}
 .stExpander{background:var(--surface)!important;border:1px solid var(--border)!important;border-radius:var(--radius-sm)!important}
 .stExpander summary{color:var(--text)!important}
 .stAlert{border-radius:var(--radius-sm)!important}
 div[data-testid="stMarkdownContainer"] p{color:var(--text)}
 div[data-testid="stMarkdownContainer"] a{color:var(--accent2)}
-label{color:var(--muted)!important;font-size:11px!important;font-weight:600!important}
-.stRadio>div{gap:8px!important}
-.stRadio label{font-size:13px!important;font-weight:500!important;color:var(--text)!important}
+label{color:var(--muted)!important;font-size:11px!important;font-weight:600!important;letter-spacing:.2px}
+.stRadio>div{gap:5px!important}
+.stRadio label{font-size:13px!important;font-weight:500!important;color:var(--text)!important;padding:7px 11px;border-radius:9px;transition:background .14s}
+.stRadio label:hover{background:var(--surface2)}
 .stCheckbox label{font-size:13px!important;font-weight:500!important;color:var(--text)!important}
-.stSlider{color:var(--accent)!important}
-.stProgress .st-bo{background:linear-gradient(90deg,var(--accent),var(--green))!important}
+.stProgress .st-bo{background:var(--grad)!important}
 hr{border-color:var(--border)!important}
-h1,h2,h3,h4,h5,h6{color:var(--text)!important}
+h1,h2,h3,h4,h5,h6{color:var(--text)!important;font-family:'Space Grotesk',sans-serif!important}
+#MainMenu,footer,header[data-testid="stHeader"]{visibility:hidden}
 </style>
 """, unsafe_allow_html=True)
 
@@ -720,6 +747,14 @@ def render_sidebar():
 
         section = st.session_state.get("section", "Workspace")
 
+        # Apply any pending navigation BEFORE the radios are instantiated
+        # (Streamlit forbids mutating a widget key after its widget exists).
+        for _pend, _wk in (("_pending_ws", "ws_radio"),
+                           ("_pending_ai", "ai_radio"),
+                           ("_pending_acc", "acc_radio")):
+            if _pend in st.session_state:
+                st.session_state[_wk] = st.session_state.pop(_pend)
+
         # ── WORKSPACE group ──────────────────────────────────
         st.markdown('<div class="nav-group">Workspace</div>', unsafe_allow_html=True)
         ws_options = ["🏠 Dashboard", "📝 Resume Builder", "✨ Resume Optimizer",
@@ -809,7 +844,7 @@ def show_dashboard():
             st.markdown(f'<div class="card"><div class="card-hd"><span>{icon}</span> {title}</div><p style="font-size:12px;color:var(--muted)">{desc}</p></div>', unsafe_allow_html=True)
             if st.button(f"Go to {title}", key=f"dash_{title}", use_container_width=True):
                 st.session_state.ws_page = val
-                st.session_state.ws_radio = val
+                st.session_state["_pending_ws"] = val
                 st.session_state.section = "Workspace"
                 st.rerun()
 
@@ -1653,7 +1688,7 @@ def show_history():
                                 st.session_state.selected_template = tpl
                                 st.session_state.section = "Workspace"
                                 st.session_state.ws_page = "✨ Resume Optimizer"
-                                st.session_state.ws_radio = "✨ Resume Optimizer"
+                                st.session_state["_pending_ws"] = "✨ Resume Optimizer"
                                 st.success("Resume restored to Optimizer!")
                                 st.rerun()
                             except Exception as e:
@@ -1894,535 +1929,9 @@ def show_interview_prep():
 
 
 def _generate_interview_questions(resume: str, jd: str, types: list, count: int) -> dict:
-    """
-    Generate exactly `count` professional interview questions with detailed STAR answers.
-    Distributes questions evenly across all selected types.
-    Tailored to the actual JD keywords and resume content.
-    """
-    from math import ceil
-
-    kw = extract_keywords_from_jd(jd) if jd else []
-    resume_lower = resume.lower()
-    matching     = [k for k in kw[:6] if k.lower() in resume_lower]
-    k0 = matching[0] if matching else "your primary domain"
-    k1 = matching[1] if len(matching) > 1 else "computational methods"
-    k2 = matching[2] if len(matching) > 2 else "data analysis"
-    k3 = matching[3] if len(matching) > 3 else "translational research"
-
-    # Each category has 6 questions with full professional answers
-    question_bank = {
-        "Behavioral": [
-            (
-                "Tell me about a time you led a complex, cross-functional research project from conception to publication.",
-                """**STAR Framework:**
-
-**Situation:** At SRKR WET Research Centre, I was appointed Team Lead for the Indo-EU Horizon 2020 SPRING project involving 14 international partners across India and Europe, during the COVID-19 pandemic which disrupted all in-person collaboration.
-
-**Task:** Deliver all scientific objectives on time, maintain data quality across multiple analytical workflows, and coordinate research activities remotely across time zones.
-
-**Action:**
-- Restructured the project timeline into 2-week sprint cycles with virtual daily stand-ups across Indian and European teams
-- Standardised all APHA analytical protocols into SOPs and uploaded them to a shared cloud workspace
-- Commissioned and validated EU-compliant instruments (HPLC, Rotavap, N₂ evaporator) while maintaining ISO-level quality logs
-- Submitted all progress reports to DBT and EU funding bodies ahead of deadlines
-
-**Result:** Delivered all project objectives ahead of schedule. Published 4 SCI-indexed papers including Q1 papers in *Water (MDPI, IF 3.4)* and *Journal of Environmental Management (IF 8.7)*. Recognised for excellence by both Indian and European partner institutions.
-
-**Key message:** I focus on process standardisation, transparent communication, and milestone-driven execution even in high-uncertainty environments."""
-            ),
-            (
-                "Describe a situation where you identified a significant scientific problem no one else had recognised, and how you addressed it.",
-                """**STAR Framework:**
-
-**Situation:** Cholangiocarcinoma (CCA) is a rare bile duct cancer with extremely poor prognosis — and in 2024, no validated early-detection biomarker pipeline existed for it in the public domain.
-
-**Task:** As part of my work at Novoridge, identify actionable gene signatures for CCA using publicly available transcriptomic data.
-
-**Action:**
-- Curated and integrated multi-dataset GEO transcriptomics using GEOparse and custom Python pipelines
-- Performed differential gene expression (DGE) analysis with DESeq2-style statistical thresholding
-- Applied ML feature selection (Random Forest, XGBoost) to prioritise candidate biomarkers
-- Cross-validated findings against TCGA pathway databases to assess clinical relevance
-
-**Result:** Proposed first-of-kind early detection biomarker candidates for Cholangiocarcinoma, addressing a critical diagnostic gap. Manuscript in preparation. This work directly demonstrates initiative and scientific independence in data-driven biomarker discovery.
-
-**Key message:** I proactively identify high-impact unmet needs and build reproducible, publication-quality pipelines to address them."""
-            ),
-            (
-                "Tell me about a time when your experimental results were unexpected. How did you handle it?",
-                """**STAR Framework:**
-
-**Situation:** During QSAR model development for SARS-CoV-2 drug discovery, my Random Forest model achieved an R² of only 0.47 — significantly below the 0.70+ threshold I had targeted.
-
-**Task:** Diagnose the root cause and either improve the model or reframe the scientific narrative accurately.
-
-**Action:**
-- Conducted systematic feature importance analysis using SHAP values to identify low-information descriptors
-- Re-curated the ChEMBL dataset, removing structural outliers and applying stricter pIC50 thresholds
-- Tested alternative fingerprint types (Morgan, ECFP4) and descriptor combinations
-- Benchmarked against published SARS-CoV-2 QSAR models to contextualise my R² within the field
-
-**Result:** Improved model performance meaningfully after re-curation. More importantly, documented the feature limitations transparently — this intellectual honesty strengthened the manuscript's scientific credibility.
-
-**Key message:** I treat unexpected results as diagnostic signals, not failures. Rigorous follow-through distinguishes strong scientists."""
-            ),
-            (
-                "Give an example of how you mentored someone and what impact it had on their career.",
-                """**STAR Framework:**
-
-**Situation:** At SRKR WET Research Centre, three Assistant Professors with limited research experience needed guidance to complete their PhD-level research alongside teaching duties.
-
-**Task:** Co-supervise them through complete research design, data collection, statistical analysis, and publication in SCI-indexed journals.
-
-**Action:**
-- Designed personalised research roadmaps aligned with each professor's teaching schedule and institutional requirements
-- Taught advanced statistical methods (PCA, ANOVA, RDA) and Python-based ML modelling from scratch
-- Co-authored manuscripts with them as corresponding author, guiding peer-review responses
-- Organised weekly journal clubs to build scientific writing and critical appraisal skills
-
-**Result:** All three professors progressed through their PhD cycles successfully. Published co-authored papers in SCI journals. Additionally guided 20+ B.Tech/M.Sc./M.Pharm students to successful project completions.
-
-**Key message:** I invest in building long-term scientific capability, not just completing tasks."""
-            ),
-            (
-                "Describe a time you had to advocate for resources or funding for a project you believed in.",
-                """**STAR Framework:**
-
-**Situation:** At Eesavyasa Technologies, the R&D division had limited budget, but I identified that investment in a Moving Bed Biofilm Reactor (MBBR) prototype could unlock a major municipal water treatment contract.
-
-**Task:** Convince senior management to allocate scrap components and engineering time for prototype development.
-
-**Action:**
-- Prepared a data-aligned business case showing ROI projections based on GHMC tender requirements
-- Built the 100L MBBR prototype entirely from company scrap, demonstrating frugal innovation
-- Conducted comprehensive water quality validation testing and documented results systematically
-- Presented working prototype to management and external stakeholders with full performance data
-
-**Result:** Successfully secured orders from GHMC (Greater Hyderabad Municipal Corporation) for city-wide drinking water quality monitoring. The prototype demonstrated commercial viability and became a reference product.
-
-**Key message:** I combine scientific rigour with business awareness — I can translate research value into organisational impact."""
-            ),
-            (
-                "Tell me about a time you had to rapidly acquire a new skill to complete a critical project.",
-                """**STAR Framework:**
-
-**Situation:** The Horizon 2020 SPRING project required GIS-based spatial mapping of 72+ water sampling sites across canal systems — a capability I had not formally trained in.
-
-**Task:** Deliver publication-quality GIS vulnerability zone maps within the project timeline.
-
-**Action:**
-- Self-taught QGIS in 3 weeks using online resources, official QGIS documentation, and YouTube tutorials
-- Integrated GPS coordinate data from 72 sampling points with heavy metal concentration datasets
-- Applied spatial interpolation methods to generate vulnerability zone maps
-- Validated maps against physical ground-truth observations from field sampling visits
-
-**Result:** Produced GIS-based vulnerability zone maps that became a key deliverable of the SPRING project, informing data-driven policy recommendations for regional water management. Maps were included in peer-reviewed publications in *Water (MDPI)*.
-
-**Key message:** I am a fast, self-directed learner. When a skill gap threatens project delivery, I close it."""
-            ),
-        ],
-        "Technical": [
-            (
-                f"Walk me through how you would design an end-to-end ML-based biomarker discovery pipeline for {k0}.",
-                f"""**Professional Answer:**
-
-An end-to-end biomarker discovery pipeline for {k0} involves five stages:
-
-**1. Data Acquisition & Curation**
-- Source transcriptomic datasets from TCGA/GEO using GEOparse or TCGAbiolinks
-- Apply strict inclusion/exclusion criteria (sample size, data completeness, platform consistency)
-- Normalise across datasets using quantile normalisation or ComBat for batch correction
-
-**2. Differential Gene Expression (DGE)**
-- Apply DESeq2 or limma-voom for DGE analysis (disease vs. control)
-- Filter by adjusted p-value < 0.05 and |log2FC| > 1 for biological significance
-- Pathway enrichment analysis (GO, KEGG) to contextualise DGE findings
-
-**3. ML Feature Selection**
-- Train Random Forest and XGBoost classifiers on DGE output
-- Extract SHAP-based feature importance to identify top candidate biomarkers
-- Cross-validate with stratified k-fold (k=5) to assess generalisation
-
-**4. Biomarker Validation**
-- Cross-reference candidates against known databases (GeneCards, UniProt, OMIM)
-- Validate in independent cohorts using survival analysis (Kaplan-Meier)
-- Assess clinical translatability via ROC-AUC analysis
-
-**5. Reproducible Pipeline**
-- Implement in Python with modular scripts, version-controlled on GitHub
-- Document with Jupyter notebooks for full reproducibility
-
-**My experience:** I applied this exact workflow for Cholangiocarcinoma and B. subtilis salt stress biomarker discovery at Novoridge, identifying candidates rpsK and metK through integrated GEO transcriptomics and ML analysis."""
-            ),
-            (
-                f"Explain QSAR modelling — how did you apply it in your SARS-CoV-2 drug discovery work?",
-                """**Professional Answer:**
-
-**QSAR (Quantitative Structure-Activity Relationship)** establishes mathematical relationships between molecular structure and biological activity.
-
-**Methodology I used:**
-1. **Data curation:** Retrieved SARS-CoV-2 bioactivity data (IC50/pIC50) from ChEMBL database, filtered for assay reliability and data completeness
-2. **Descriptor generation:** Used RDKit to compute 2D molecular descriptors (166 MACCS keys + Morgan fingerprints at 2048 bits)
-3. **Model building:** Trained Random Forest classifier with GridSearchCV hyperparameter optimisation
-4. **Performance:** Achieved R² ≈ 0.47 on test set — modest but consistent with published SARS-CoV-2 QSAR benchmarks due to structural diversity of actives
-5. **Output:** Generated ranked compound list with predicted pIC50 values for virtual screening prioritisation
-
-**Why QSAR matters:** It enables computational pre-screening of thousands of compounds before expensive wet-lab synthesis and testing, dramatically reducing early drug discovery costs.
-
-**Extensions I'd add in production:** Applicability domain analysis, ensemble models (RF + XGBoost + SVM), and 3D pharmacophore modelling for improved accuracy."""
-            ),
-            (
-                f"How do you approach multi-omics data integration for {k2}?",
-                f"""**Professional Answer:**
-
-Multi-omics integration requires a principled approach to handle data heterogeneity:
-
-**Data layers I typically integrate:**
-- Transcriptomics (RNA-seq from GEO/TCGA)
-- Proteomics (when available via PRIDE or ProteomicsDB)
-- Metabolomics (MetaboLights)
-- Epigenomics (ENCODE, GEO ChIP-seq)
-
-**Integration strategies:**
-1. **Early integration:** Concatenate feature matrices → single ML model (risk: curse of dimensionality)
-2. **Late integration:** Train modality-specific models → ensemble outputs (my preferred approach for biomarker discovery)
-3. **Intermediate integration:** Factor analysis methods (MOFA+, SNF) for latent factor extraction
-
-**My workflow for {k2}:**
-- Normalise each modality independently (TMM for RNA-seq, z-score for metabolomics)
-- Select top features per modality via SHAP importance
-- Build XGBoost ensemble model on selected multi-omics features
-- Validate biological coherence via pathway enrichment analysis
-
-**Real example:** For B. subtilis salt stress at Novoridge, I integrated GEO transcriptomic datasets across multiple conditions and identified rpsK and metK as candidate stress-response biomarkers using this approach."""
-            ),
-            (
-                "How do you ensure reproducibility in your computational pipelines?",
-                """**Professional Answer:**
-
-Reproducibility is non-negotiable in research. My approach:
-
-**Code management:**
-- All code version-controlled on GitHub with descriptive commit messages
-- Modular Python scripts with clear function docstrings and type hints
-- Jupyter notebooks with inline documentation for each analysis step
-
-**Environment management:**
-- Conda environments with pinned package versions (environment.yml)
-- Docker containers for deployment-sensitive workflows
-
-**Data management:**
-- Raw data never modified — all transformations applied to copies
-- Intermediate results saved with clear naming conventions (e.g., `deg_results_2024-01-15.csv`)
-- All random seeds set explicitly (np.random.seed, sklearn random_state)
-
-**Documentation:**
-- README.md per project with installation, usage, and expected outputs
-- Methods sections written in parallel with code development
-- Published pipelines on GitHub with DOI via Zenodo
-
-**My portfolio:** https://thokhir.github.io/portfolio2/ — all my pipelines are publicly available and reproducible.
-
-This approach directly contributed to 4 published SCI papers from the SPRING project data."""
-            ),
-            (
-                f"Explain how molecular docking works and how you used it in drug discovery.",
-                """**Professional Answer:**
-
-**Molecular docking** computationally predicts the binding pose and affinity of a small molecule ligand within a protein binding site.
-
-**Workflow:**
-1. **Target preparation:** Clean PDB structure, add hydrogens, assign charges, define binding pocket (using AutoDock Tools or Schrödinger Maestro)
-2. **Ligand preparation:** Generate 3D conformers, assign tautomers/protonation states (OpenBabel, RDKit)
-3. **Docking:** Run AutoDock Vina or Glide with defined grid box around active site
-4. **Scoring:** Rank compounds by binding free energy (ΔG, kcal/mol) — typically threshold at −7 kcal/mol or better
-5. **Visual validation:** Inspect top poses in PyMOL for key interaction (H-bonds, hydrophobic contacts, π-stacking)
-
-**My application at CSIR-IICT:**
-- Used molecular docking to screen anticancer lead compounds against tubulin (colchicine binding site)
-- Cross-validated docking predictions with tubulin polymerization inhibition assays (wet-lab IC50)
-- Integration of in silico docking with in vitro MTT/SRB data improved hit rate by ~3x versus random screening
-
-**ADMET integration:** Always complement docking with ADMET prediction (SwissADME, pkCSM) to filter for drug-likeness (Lipinski RO5) before wet-lab validation."""
-            ),
-            (
-                "How would you validate a biomarker candidate from in silico discovery to clinical relevance?",
-                """**Professional Answer:**
-
-Biomarker validation is a multi-stage process moving from in silico → in vitro → in vivo → clinical:
-
-**Stage 1 — In silico validation:**
-- Cross-reference candidate against GeneCards, OMIM, ClinVar for known disease associations
-- Survival analysis in TCGA/GEO cohorts (Kaplan-Meier, log-rank test)
-- ROC-AUC analysis to assess discriminative power (AUC > 0.80 = clinically actionable)
-- Network analysis (STRING, Cytoscape) for pathway context
-
-**Stage 2 — In vitro validation:**
-- Confirm expression in disease vs. normal cell lines (RT-PCR, Western Blot)
-- Functional assays: siRNA knockdown + phenotypic assessment (proliferation, apoptosis, migration)
-- ELISA for secreted protein biomarkers in conditioned media
-
-**Stage 3 — Clinical specimen validation:**
-- Validate in independent patient cohorts (FFPE sections, blood/serum samples)
-- Immunohistochemistry (IHC) scoring
-- Correlation with clinical parameters (stage, grade, survival)
-
-**My experience:** I applied Stages 1-2 for Cholangiocarcinoma and B. subtilis biomarker candidates at Novoridge. Stage 3 is planned as part of ongoing collaboration with clinical partners."""
-            ),
-        ],
-        "Situational": [
-            (
-                "You are leading a project and halfway through, the primary analytical instrument breaks down. Funding ends in 4 months. What do you do?",
-                """**Professional Answer:**
-
-This is a resource-management and risk-mitigation scenario. My approach:
-
-**Immediate (Day 1-3):**
-- Assess the failure mode — is it repairable in-house or requires vendor service?
-- Identify alternative instruments within the institution or neighbouring labs (collaborative access agreements)
-- Quantify the timeline impact: which deliverables are instrument-dependent vs. can proceed in parallel?
-
-**Short-term (Week 1-2):**
-- Implement a parallel workflow: continue all non-instrument-dependent analysis (data processing, statistical modelling, manuscript writing)
-- Negotiate emergency instrument access with collaborators — I have done this successfully at SRKR with HPLC and AAS instruments
-- Escalate to PI/project manager with a revised timeline and contingency plan
-
-**If repair is prolonged:**
-- Prioritise experiments that deliver the most critical project data first when instrument is restored
-- Explore whether preliminary data can support a project extension request to the funding body (DBT/EU require documented justifications, which I have prepared before)
-
-**Key lesson from experience:** During the Horizon 2020 SPRING project, COVID-19 disrupted our entire wet lab. We pivoted to computational analysis and data modelling during the shutdown, then completed all wet-lab work after restrictions lifted — still on time."""
-            ),
-            (
-                "You receive contradictory results from two different analytical methods for the same sample. How do you resolve it?",
-                """**Professional Answer:**
-
-Contradictory results are scientifically valuable — they reveal either method limitations or genuine biological complexity.
-
-**My systematic approach:**
-
-**Step 1 — Rule out technical errors first:**
-- Check instrument calibration logs for both methods
-- Verify sample preparation protocols (concentration, storage conditions, freeze-thaw cycles)
-- Repeat both assays with freshly prepared samples and appropriate controls
-
-**Step 2 — Understand method assumptions:**
-- Compare the underlying measurement principles (e.g., HPLC vs. UV-Vis for the same analyte)
-- Identify which method has better specificity and validated LOD/LOQ for your sample matrix
-- Consult method validation literature (APHA, AOAC standards)
-
-**Step 3 — Apply a gold standard:**
-- If available, use a reference method or certified reference material to determine which assay is accurate
-- For environmental samples, I routinely used LC-MS as the reference against HPLC-DAD for heavy metal speciation
-
-**Step 4 — Document and report transparently:**
-- Report both results with methodological context in the manuscript
-- Contradictory results often become a Discussion section highlight
-
-**From my SPRING project:** We identified discordant heavy metal readings between AAS and ICP-OES for some site samples. Root cause was matrix interference in AAS. Resolved by acidification pre-treatment and cross-validated against certified reference water standards."""
-            ),
-            (
-                "If you were asked to develop a research plan for target identification in cardiometabolic disease with a 12-month timeline and limited budget, what would you propose?",
-                """**Professional Answer:**
-
-**12-Month Target Identification Plan — Cardiometabolic Disease (in silico-first, budget-conscious):**
-
-**Months 1-2: Literature + Database Mining**
-- Systematic review of published GWAS for T2D, obesity, NAFLD, cardiovascular disease (NHGRI-EBI GWAS Catalog)
-- Identify druggable target space using ChEMBL, OpenTargets, and DGIdb
-- Build target candidate list with evidence scores
-
-**Months 3-5: Transcriptomic Data Analysis (free public data)**
-- Download TCGA/GEO datasets for metabolic tissue (liver, adipose, muscle, pancreas)
-- DGE analysis in disease vs. healthy controls across multiple cohorts
-- Multi-omics integration with metabolomics data (MetaboLights)
-
-**Months 6-8: Computational Target Evaluation**
-- QSAR feasibility assessment for top candidates
-- Protein structure analysis via AlphaFold2 — binding pocket druggability assessment
-- ADMET filtering to prioritise targets with tractable chemical space
-
-**Months 9-11: Wet-lab validation (prioritised, budget-conscious)**
-- 2-3 top candidates only; validate expression by RT-PCR/Western Blot in relevant cell lines
-- Functional screen using siRNA knockdown in metabolic cell models (HepG2 for liver targets)
-
-**Month 12: Output**
-- Target validation report with ranked candidate list
-- Manuscript preparation + grant application for Phase 2 funding
-
-**Budget optimisation:** Open-source tools (Python, R, QGIS, Galaxy), public databases (GEO/TCGA/PDB), and in-house cell culture = 80% of the science at <20% of the cost."""
-            ),
-            (
-                "How would you handle a situation where a collaborator from another country insists on a methodology you believe is scientifically flawed?",
-                """**Professional Answer:**
-
-International collaborations require scientific diplomacy — being right without being collaborative is counterproductive.
-
-**My approach:**
-
-**Step 1 — Understand their reasoning fully first**
-- Request a detailed explanation of why they prefer their method
-- Acknowledge any valid points (local expertise, equipment availability, regulatory requirements in their country)
-
-**Step 2 — Present your concerns with evidence, not opinion**
-- Prepare a concise 1-2 page technical brief showing:
-  - Published literature validating your approach
-  - Side-by-side comparison of method performance (sensitivity, specificity, reproducibility)
-  - Specific flaws in their approach with citations
-
-**Step 3 — Propose a parallel test**
-- Suggest running both methods on a small pilot dataset
-- Let the data decide — remove the interpersonal element from the disagreement
-- This approach preserves the relationship while ensuring scientific rigour
-
-**Step 4 — Escalate if patient safety/data integrity is at risk**
-- If the flaw would compromise published results or patent claims, escalate to project coordinator with documentation
-
-**From my experience:** During the Horizon 2020 SPRING project with 14 partners, I encountered methodological disagreements on heavy metal analysis protocols. I used exactly this approach — a pilot comparison experiment resolved the dispute within 2 weeks without damaging the collaboration."""
-            ),
-        ],
-        "Culture Fit": [
-            (
-                "Why are you specifically interested in this role and what unique value do you bring?",
-                """**Professional Answer:**
-
-I am attracted to this role because it sits precisely at the intersection of my three core strengths: wet-lab biology, computational multi-omics, and translational research.
-
-**What I bring that is genuinely rare:**
-- **Both wet-lab and dry-lab depth:** I can design a cell biology experiment in the morning and write a Python ML pipeline in the afternoon. Very few researchers operate effectively across both worlds.
-- **International collaborative experience:** Horizon 2020 SPRING with 14 partners, UKIERI Fellowship at King's College London, and 35 SCI publications across global journals
-- **Entrepreneurial mindset:** Founded RABS Pvt. Ltd. at IIT Warangal — I think about research in terms of scalability and real-world impact, not just publication metrics
-- **Publication productivity:** 35 SCI-indexed papers including 9 Q1 — I deliver research that passes the highest peer-review standards
-
-**What excites me about this specific role:**
-[Tailor to specific JD — mention their therapeutic area, pipeline stage, or technology platform]
-
-I am not looking for just any research position. I am looking for an environment where rigour, data, and collaboration drive decisions — which is exactly what this role represents."""
-            ),
-            (
-                "How do you balance scientific rigour with the pressure to produce results quickly in industry or competitive grant environments?",
-                """**Professional Answer:**
-
-This is a genuine tension I have navigated across academic, industry, and EU-funded research environments.
-
-**My framework:**
-
-**Define non-negotiables upfront:** Some things cannot be rushed — proper controls, statistical power calculations, validated protocols. I establish these as fixed in the project plan so they are never traded away under deadline pressure.
-
-**Apply 80/20 thinking to speed:** 80% of deliverable value often comes from 20% of the experimental complexity. I identify the minimum viable dataset that answers the core question, complete it first, then add depth if time allows.
-
-**Parallel track planning:** At SRKR, I ran data analysis workflows and manuscript drafting in parallel with wet-lab work, so that when experiments concluded, results could be submitted within weeks rather than months.
-
-**Transparent communication:** When timelines are genuinely incompatible with rigour, I say so early — with a clear explanation and alternative plan — rather than cutting corners silently.
-
-**Result:** Delivered all Horizon 2020 SPRING objectives ahead of schedule while maintaining >98% analytical compliance. Speed and rigour are not opposites when the process is well-designed."""
-            ),
-            (
-                "Tell me how you stay current with the latest developments in your field.",
-                """**Professional Answer:**
-
-Staying current is a systematic practice, not passive absorption. My specific methods:
-
-**Literature:**
-- PubMed/Google Scholar alerts for 15 key search terms (e.g., "cholangiocarcinoma biomarker," "multi-omics drug discovery," "QSAR machine learning")
-- Weekly review of Table of Contents for key journals: *Journal of Medicinal Chemistry, Nature Chemical Biology, JCIM, Cell Systems*
-- Semantic Scholar for AI-assisted paper discovery
-
-**Preprints & conferences:**
-- bioRxiv and chemRxiv for early-access research
-- Virtual attendance at AACR, ISMB, and EuroBioc conferences
-- NeurIPS and ICML for ML methodology applied to biology
-
-**Hands-on learning:**
-- Completed: Data Science for Biologists (2025), Cancer Genomics with NGS (2024), Python for Biologists (2023), Drug Discovery & Development (2023)
-- Active GitHub portfolio: https://thokhir.github.io/portfolio2/
-- Kaggle competitions for ML benchmarking
-
-**Network:**
-- LinkedIn engagement with researchers at Roche, AstraZeneca, EMBL-EBI
-- Collaboration with EU Horizon partners keeps me connected to European research priorities
-
-This systematic approach ensures I am never more than 2-3 weeks behind on significant developments in my core areas."""
-            ),
-        ],
-        "HR / Salary": [
-            (
-                "Walk me through your career journey and how it has prepared you for this role.",
-                """**Professional Answer:**
-
-My career has been intentionally multidisciplinary — building depth in cancer biology and drug discovery while systematically adding computational and data science capabilities.
-
-**Chapter 1 — Foundation in Drug Discovery (CSIR-IICT, 2006-2012):**
-I spent 6 years at CSIR-IICT screening 130+ anticancer compounds, conducting mechanistic studies, and completing two research visits to King's College London. This gave me deep wet-lab rigour and a PhD grounded in cancer biology, drug delivery, and molecular pharmacology.
-
-**Chapter 2 — Expanding to Translational & Computational (SRKR WET Research Centre, 2020-2025):**
-Led a 14-partner EU Horizon 2020 project, built a full analytical laboratory from scratch, developed Python ML models for water quality forecasting, and mentored 3 PhD-track researchers. This built project leadership, international collaboration, and computational skills.
-
-**Chapter 3 — AI/ML-Driven Research (Novoridge, 2025-present):**
-Now applying everything in an integrated way — QSAR pipelines, multi-omics biomarker discovery, and reproducible Python workflows for drug discovery. Published 35 SCI papers across this journey.
-
-**The thread:** Every role has deepened my ability to translate biological questions into data-driven insights — which is exactly what this position demands."""
-            ),
-            (
-                "What are your salary expectations?",
-                """**Professional Answer:**
-
-I've researched market rates for this type of role through LinkedIn Salary, Glassdoor, and conversations with colleagues at similar organisations.
-
-For a Senior Research Scientist / Computational Biologist role with my profile — PhD, 11+ years experience, 35 SCI publications, international collaboration background, and ML/AI capabilities — the appropriate range appears to be:
-
-**Industry (pharma/biotech, India):** ₹18–28 LPA depending on organisation size and location
-**International (EU/UK):** €55,000–75,000 gross annually
-**Academic/research institutes:** Commensurate with DST/DBT pay scales at Scientist-D/E level
-
-I am open to discussing the total compensation package including research autonomy, publication support, conference allowances, and career development opportunities — these matter as much as base salary to me.
-
-Could you share the budgeted range for this position? I want to ensure we are aligned before investing further in the process."""
-            ),
-            (
-                "Where do you see yourself in 5 years?",
-                """**Professional Answer:**
-
-In 5 years, I see myself in a senior scientific leadership role — either as a Principal Scientist, Associate Director, or equivalent — where I am:
-
-**Scientifically:** Leading a portfolio of drug discovery or translational research programs, with a focus on multi-omics biomarker discovery and computational target identification. I aim to have contributed to at least one compound or biomarker that has reached clinical validation.
-
-**Organizationally:** Building and mentoring a team of 4-6 researchers, combining wet-lab biologists with computational scientists — the exact type of cross-functional team I have always worked most effectively within.
-
-**Externally:** Publishing in high-impact journals, presenting at international conferences (AACR, ISMB), and maintaining active collaborative networks with academic and industry partners.
-
-**For this role specifically:** I see it as the foundation for that trajectory. The opportunity to apply my multi-omics, ML, and drug discovery expertise in a focused translational context is exactly the accelerator I need at this stage of my career.
-
-I am not looking to move frequently — I invest deeply in the organisations I join. My 5-year tenure at SRKR and 6 years at CSIR-IICT demonstrate that."""
-            ),
-        ],
-    }
-
-    if not types:
-        types = ["Behavioral", "Technical"]
-
-    # Calculate how many questions per type to reach exactly `count`
-    n_types = len(types)
-    base    = count // n_types          # base per type
-    extra   = count % n_types           # distribute remainder to first few types
-
-    output  = {}
-    for t_idx, qtype in enumerate(types):
-        bank    = question_bank.get(qtype, [])
-        n_this  = base + (1 if t_idx < extra else 0)
-        n_this  = min(n_this, len(bank))  # can't exceed available questions
-        for q, a in bank[:n_this]:
-            output[f"[{qtype}] {q}"] = a
-
-    # If we still have room (because some types had fewer questions than needed), fill from Behavioral
-    if len(output) < count:
-        fallback = question_bank.get("Behavioral", [])
-        for q, a in fallback:
-            key = f"[Behavioral] {q}"
-            if key not in output and len(output) < count:
-                output[key] = a
-
-    return dict(list(output.items())[:count])
+    """Delegates to the generic, count-accurate generator in utils.interview."""
+    from utils.interview import generate_interview_questions
+    return generate_interview_questions(resume, jd, types, count)
 
 
 
@@ -3161,7 +2670,7 @@ def route():
                 if st.button("🪙 Buy Credits from ₹49", use_container_width=True, type="primary"):
                     st.session_state["_pay_item"] = "pack_jobhunt"
                     st.session_state["_show_payment"] = True
-                    st.session_state.acc_radio = "🔑 Subscription & Credits"
+                    st.session_state["_pending_acc"] = "🔑 Subscription & Credits"
                     st.session_state.acc_page = "🔑 Subscription & Credits"
                     st.session_state.section  = "Account"
                     st.rerun()
@@ -3169,7 +2678,7 @@ def route():
                 if st.button("⬆️ Subscribe — Monthly ₹399", use_container_width=True):
                     st.session_state["_pay_item"] = "monthly"
                     st.session_state["_show_payment"] = True
-                    st.session_state.acc_radio = "🔑 Subscription & Credits"
+                    st.session_state["_pending_acc"] = "🔑 Subscription & Credits"
                     st.session_state.acc_page = "🔑 Subscription & Credits"
                     st.session_state.section  = "Account"
                     st.rerun()

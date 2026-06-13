@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m py_compile utils/exporter.py utils/template_manager.py)",
+      "Bash(python -c \"from utils.exporter import _resolve_template, export_resume_to_docx; b=export_resume_to_docx\\({'_raw':'ALEX MORGAN\\\\nPROFESSIONAL SUMMARY\\\\nGreat engineer.\\\\nSKILLS\\\\nPython, SQL','template_name':'tech_01'}\\); print\\('docx bytes:', len\\(b\\)\\)\")",
+      "Bash(python -m py_compile utils/resume_processor.py)",
+      "Bash(python -c \"from utils.resume_processor import generate_cover_letter; print\\(generate_cover_letter\\('Jane Doe\\\\nSUMMARY\\\\nMarketing lead.\\\\nEXPERIENCE\\\\n- Grew revenue 40% in 12 months','Seeking marketing manager with SEO and analytics','Acme','Hiring Manager','Professional'\\)[:300]\\)\")",
+      "Bash(python -m py_compile app.py)",
+      "Bash(python -m py_compile app.py utils/*.py)",
+      "Bash(PYTHONIOENCODING=utf-8 python -c ' *)"
+    ]
+  }
+}

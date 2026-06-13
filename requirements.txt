@@ -1,0 +1,12 @@
+streamlit>=1.28.0
+python-docx>=0.8.11
+pymupdf>=1.23.0
+
+# ── Optional: on-device AI ────────────────────────────────────────
+# The app talks to a LOCAL Ollama server over HTTP (no API key, fully
+# offline) using only the Python standard library — so nothing extra is
+# REQUIRED here. To enable on-device AI rewriting:
+#   1. Install Ollama:   https://ollama.com
+#   2. Pull a model:     ollama pull mistral
+# When Ollama is running the app uses it automatically; otherwise it falls
+# back to the built-in rule-based engine.

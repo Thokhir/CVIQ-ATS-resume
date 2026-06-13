@@ -26,7 +26,8 @@
       "Bash(git credential *)",
       "Bash(PYTHONIOENCODING=utf-8 grep -n 'Address: {addr_line}' utils/exporter.py)",
       "Bash(python -)",
-      "Bash(python -m py_compile utils/exporter.py)"
+      "Bash(python -m py_compile utils/exporter.py)",
+      "Bash(git worktree *)"
     ]
   }
 }

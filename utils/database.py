@@ -9,11 +9,14 @@ Plans:
   yearly   — ₹2,999/year, 1 resume/day + all AI tools, renews yearly
   agency   — Owner/internal only
 """
-import sqlite3, hashlib, json, secrets, string
+import os, sqlite3, hashlib, json, secrets, string
 from datetime import datetime, timedelta
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent.parent / "data" / "cviq.db"
+# DB location can be overridden with CVIQ_DB_PATH (useful if the deploy's repo
+# mount is read-only — point it at a writable dir like /tmp/cviq.db).
+DB_PATH = Path(os.environ.get("CVIQ_DB_PATH",
+                              str(Path(__file__).parent.parent / "data" / "cviq.db")))
 
 # ── Owner config ──────────────────────────────────────────────────
 OWNER_USERNAMES = {"thokhir"}
@@ -112,9 +115,15 @@ def plan_price(plan_or_pack: str) -> int:
 
 def get_conn():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False, timeout=30)
     conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
+    # WAL is just a performance optimisation and is NOT supported on some
+    # deployment filesystems (e.g. Streamlit Cloud's overlay FS), where it
+    # raises OperationalError. Best-effort only — default journal works fine.
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+    except sqlite3.OperationalError:
+        pass
     return conn
 
 
@@ -232,12 +241,19 @@ def init_db():
             created      TEXT DEFAULT (datetime('now')),
             FOREIGN KEY(user_id) REFERENCES users(id)
         );
+        CREATE TABLE IF NOT EXISTS email_grants (
+            email        TEXT PRIMARY KEY,
+            access_until TEXT NOT NULL,
+            granted_by   TEXT,
+            created      TEXT DEFAULT (datetime('now'))
+        );
     """)
 
     # Schema upgrades
     for sql in [
         "ALTER TABLE users ADD COLUMN profession TEXT DEFAULT ''",
         "ALTER TABLE users ADD COLUMN credits INTEGER DEFAULT 0",
+        "ALTER TABLE users ADD COLUMN temp_access_until TEXT",
         "ALTER TABLE subscriptions ADD COLUMN resumes_used INTEGER DEFAULT 0",
     ]:
         try: c.execute(sql); conn.commit()
@@ -389,6 +405,78 @@ def add_credit_pack(uid, pack_id, granted_by="system") -> int:
     return add_credits(uid, pack["credits"], reason=f"pack:{pack_id}", granted_by=granted_by)
 
 
+# ── Temporary full access (owner-granted, time-boxed, BY EMAIL) ───
+# Grants are keyed by email so they work even if the person has NOT signed up
+# yet — the moment they create an account (or log in) with that email, the
+# full-access window applies automatically. Independent of plan & credits.
+def _dt(s):
+    try:
+        return datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
+    except Exception:
+        return None
+
+def get_temp_access_until(uid):
+    """Effective full-access expiry for a user (user column or email grant)."""
+    conn = get_conn()
+    row = conn.execute("SELECT email, temp_access_until FROM users WHERE id=?", (uid,)).fetchone()
+    until = row["temp_access_until"] if row else None
+    if row and row["email"]:
+        g = conn.execute("SELECT access_until FROM email_grants WHERE email=?",
+                         (row["email"].lower(),)).fetchone()
+        if g and (not until or g["access_until"] > until):
+            until = g["access_until"]
+    conn.close()
+    return until
+
+def has_temp_access(uid) -> bool:
+    """True if the user currently has an active owner-granted full-access window."""
+    until = get_temp_access_until(uid)
+    d = _dt(until) if until else None
+    return bool(d and d > datetime.now())
+
+def grant_temporary_full_access(email, hours=24, granted_by="owner"):
+    """Give FULL access for `hours` to ANY email — even one with no account yet.
+    Stored as an email grant; auto-applies when they sign up / log in."""
+    email = (email or "").strip().lower()
+    if not email or "@" not in email or "." not in email:
+        return {"ok": False, "message": "Please enter a valid email address."}
+    until = (datetime.now() + timedelta(hours=int(hours))).strftime("%Y-%m-%d %H:%M:%S")
+    conn = get_conn()
+    conn.execute(
+        "INSERT INTO email_grants (email, access_until, granted_by) VALUES (?,?,?) "
+        "ON CONFLICT(email) DO UPDATE SET access_until=excluded.access_until, "
+        "granted_by=excluded.granted_by",
+        (email, until, granted_by))
+    row = conn.execute("SELECT id, username FROM users WHERE email=?", (email,)).fetchone()
+    if row:  # mirror onto an existing account for immediate effect
+        conn.execute("UPDATE users SET temp_access_until=? WHERE id=?", (until, row["id"]))
+    conn.commit(); conn.close()
+    who = row["username"] if row else "this email"
+    extra = "" if row else " — it activates automatically when they sign up / log in with this email."
+    return {"ok": True, "until": until, "has_account": bool(row),
+            "message": f"✅ Granted {hours}h full access to {who} ({email}) until {until}{extra}"}
+
+def revoke_temp_access_email(email):
+    email = (email or "").strip().lower()
+    conn = get_conn()
+    conn.execute("DELETE FROM email_grants WHERE email=?", (email,))
+    conn.execute("UPDATE users SET temp_access_until=NULL WHERE email=?", (email,))
+    conn.commit(); conn.close()
+
+def get_active_temp_grants():
+    """List active email grants, joined with the account (if one exists)."""
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT eg.email, eg.access_until, eg.granted_by, u.id AS uid, u.username "
+        "FROM email_grants eg LEFT JOIN users u ON LOWER(u.email)=eg.email "
+        "WHERE eg.access_until > ? ORDER BY eg.access_until DESC",
+        (now,)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
 # ── Subscriptions & Usage ─────────────────────────────────────────
 
 def has_subscription_ai(uid, username="", email="") -> bool:
@@ -416,6 +504,7 @@ def get_user_plan(uid, username="", email=""):
     role_row = conn.execute("SELECT role FROM users WHERE id=?", (uid,)).fetchone()
     conn.close()
     if role_row and role_row["role"] in ("owner","admin"): return "agency"
+    if has_temp_access(uid): return "agency"   # owner-granted 24h full access
     sub = get_active_subscription(uid)
     if not sub: return "none"
     # Check expiry for time-based plans
@@ -433,6 +522,10 @@ def can_use_optimizer(uid, username="", email=""):
     Returns (allowed: bool, reason: str, remaining: int)
     Checks plan, expiry, period quota, and daily quota.
     """
+    # Owner-granted temporary full access = unlimited while the window is open.
+    if has_temp_access(uid):
+        return True, "ok", 999
+
     credits  = get_credits(uid)
     plan_key = get_user_plan(uid, username, email)
     sub      = get_active_subscription(uid)
@@ -482,6 +575,10 @@ def record_optimizer_use(uid, username="", email=""):
     no active subscription quota, one credit is deducted instead.
     Returns the charge method: 'subscription' | 'credit' | 'free'.
     """
+    # Owner-granted temporary full access charges nothing.
+    if has_temp_access(uid):
+        return "free"
+
     plan_key = get_user_plan(uid, username, email)
     plan     = PLANS.get(plan_key, {})
     sub      = get_active_subscription(uid)

@@ -45,6 +45,8 @@ from utils.database import (
     generate_license_key, generate_bulk_keys, redeem_license_key,
     get_all_license_keys, get_all_users, get_all_subscriptions, delete_user,
     set_user_role, get_app_stats,
+    grant_temporary_full_access, has_temp_access, revoke_temp_access_email,
+    get_active_temp_grants, get_temp_access_until,
     create_reset_token, verify_reset_token, reset_password_with_token,
     create_payment_request, get_all_payment_requests, approve_payment, reject_payment,
 )
@@ -931,11 +933,14 @@ def show_resume_builder():
         # ── AI enhancement toggle ─────────────────────────────
         _ai_on = llm.ollama_available()
         ai_enhance = st.checkbox(
-            "✨ Let AI rewrite my Objective, Experience & Project descriptions into polished bullets",
+            "✨ Auto-expand my Objective, Experience & Project keywords into ATS-optimized bullets",
             value=True,
-            help=("Type rough notes in those fields — they'll be rewritten on generate. "
-                  + ("On-device AI (Ollama) detected." if _ai_on
-                     else "No local AI detected: notes are cleanly formatted into bullets instead.")))
+            help=("Just type keywords or rough points in those fields — they're expanded into "
+                  "professional, ATS-friendly bullets on Generate. "
+                  + ("On-device AI (Ollama) detected for richer rewriting."
+                     if _ai_on else
+                     "Uses the built-in ATS writing engine (works fully offline — no internet or API key). "
+                     "Install Ollama for even richer AI rewriting.")))
 
         # ── Objective / Summary ──────────────────────────────
         st.markdown("### 🎯 Career Objective / Professional Summary")
@@ -2410,6 +2415,51 @@ def show_admin_panel():
     for col, (label, val, color) in zip(cols, stat_items):
         with col:
             st.markdown(f'<div class="stat-card"><div class="stat-label">{label}</div><div class="stat-val" style="color:{color};font-size:20px">{val}</div></div>', unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # ── ⏱️ Grant time-boxed FULL ACCESS by email ──────────────────────────
+    st.markdown("### ⏱️ Grant Full Access by Email (time-boxed)")
+    st.caption("Give ANY email complete access (all tools, unlimited optimizations) for a limited window — "
+               "even if they haven't signed up yet. If there's no account, the grant activates "
+               "automatically when they create one / log in with that email. Independent of their "
+               "plan or credits.")
+    gca1, gca2, gca3 = st.columns([3, 1, 1])
+    with gca1:
+        ta_email = st.text_input("User email", key="ta_email", placeholder="person@email.com",
+                                 label_visibility="collapsed")
+    with gca2:
+        ta_hours = st.number_input("Hours", 1, 720, 24, key="ta_hours")
+    with gca3:
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("⚡ Grant Access", key="ta_grant", use_container_width=True, type="primary"):
+            if not ta_email.strip():
+                st.error("Enter the user's email.")
+            else:
+                res = grant_temporary_full_access(ta_email.strip(), int(ta_hours), st.session_state.username)
+                if res["ok"]:
+                    st.success(res["message"])
+                    st.rerun()
+                else:
+                    st.error(res["message"])
+
+    active_grants = get_active_temp_grants()
+    if active_grants:
+        st.markdown("**Active full-access grants:**")
+        for g in active_grants:
+            who = g.get("username") or "⏳ pending sign-up"
+            gc1, gc2 = st.columns([4, 1])
+            with gc1:
+                st.markdown(
+                    f'<div style="background:var(--surface);border:1px solid var(--glass-brd);'
+                    f'border-radius:8px;padding:8px 12px;font-size:12px">'
+                    f'👤 <b>{who}</b> ({g["email"]}) — ⏳ until <b style="color:#3ecf8e">{g["access_until"]}</b></div>',
+                    unsafe_allow_html=True)
+            with gc2:
+                if st.button("Revoke", key=f"ta_rev_{g['email']}", use_container_width=True):
+                    revoke_temp_access_email(g["email"])
+                    st.warning(f"Revoked access for {g['email']}")
+                    st.rerun()
 
     st.markdown("---")
 

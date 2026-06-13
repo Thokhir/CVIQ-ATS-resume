@@ -10,6 +10,7 @@ All bugs fixed:
   7. Scoring: weighted phrases so 40% becomes 80%+ after real optimization
   8. Cover letter: fully JD-driven, role-specific, not generic
 """
+from __future__ import annotations  # safe `X | None` annotations on Python 3.7+
 
 import re
 import io

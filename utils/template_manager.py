@@ -10,6 +10,7 @@ Each template .docx is a REAL Word document with the layout, fonts, colors
 exactly as you want. When a user selects it, CVIQ maps their resume content
 into that template's structure using python-docx paragraph/style matching.
 """
+from __future__ import annotations  # safe `bytes | None` annotation on Python 3.7+
 
 import io
 import json

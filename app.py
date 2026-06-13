@@ -60,8 +60,27 @@ from utils.resume_processor import (
 from utils.resume_processor import (
     extract_text_from_file, parse_resume_text,
     optimize_resume_for_jd, extract_keywords_from_jd,
-    generate_cover_letter, ai_write_summary, ai_write_bullets,
+    generate_cover_letter,
 )
+# Defensive import: if a deploy is ever out of sync (new app.py against an
+# older resume_processor.py), the app must still load. Fall back to lightweight
+# local shims so the Builder keeps working without on-device AI rewriting.
+try:
+    from utils.resume_processor import ai_write_summary, ai_write_bullets
+except ImportError:
+    def ai_write_summary(raw, name="", industry=""):
+        return (raw or "").strip()
+
+    def ai_write_bullets(raw, role="", org="", industry=""):
+        raw = (raw or "").strip()
+        if not raw:
+            return ""
+        out = []
+        for ln in raw.replace(";", "\n").splitlines():
+            s = ln.strip().lstrip("•-*–◦·").strip()
+            if s:
+                out.append("• " + s[0].upper() + s[1:])
+        return "\n".join(out) if out else "• " + raw
 from utils.exporter import (
     export_resume_to_docx, export_resume_to_txt,
     get_all_templates, get_template_preview_html, TEMPLATES

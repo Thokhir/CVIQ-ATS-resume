@@ -9,11 +9,14 @@ Plans:
   yearly   — ₹2,999/year, 1 resume/day + all AI tools, renews yearly
   agency   — Owner/internal only
 """
-import sqlite3, hashlib, json, secrets, string
+import os, sqlite3, hashlib, json, secrets, string
 from datetime import datetime, timedelta
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent.parent / "data" / "cviq.db"
+# DB location can be overridden with CVIQ_DB_PATH (useful if the deploy's repo
+# mount is read-only — point it at a writable dir like /tmp/cviq.db).
+DB_PATH = Path(os.environ.get("CVIQ_DB_PATH",
+                              str(Path(__file__).parent.parent / "data" / "cviq.db")))
 
 # ── Owner config ──────────────────────────────────────────────────
 OWNER_USERNAMES = {"thokhir"}
@@ -112,9 +115,15 @@ def plan_price(plan_or_pack: str) -> int:
 
 def get_conn():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+    conn = sqlite3.connect(str(DB_PATH), check_same_thread=False, timeout=30)
     conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
+    # WAL is just a performance optimisation and is NOT supported on some
+    # deployment filesystems (e.g. Streamlit Cloud's overlay FS), where it
+    # raises OperationalError. Best-effort only — default journal works fine.
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+    except sqlite3.OperationalError:
+        pass
     return conn
 
 
